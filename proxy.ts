@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Temporalmente desactivado en Edge por estabilidad en Vercel.
   // La autorización y redirecciones siguen verificándose en páginas y server actions.
   return NextResponse.next({ request });
