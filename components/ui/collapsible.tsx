@@ -15,6 +15,7 @@ function Collapsible({
 function CollapsibleTrigger({
   className,
   children,
+  asChild = false,
   ...props
 }: React.ComponentProps<typeof CollapsiblePrimitive.Trigger>) {
   return (
@@ -24,10 +25,13 @@ function CollapsibleTrigger({
         "group/collapsible-trigger hover:bg-muted/80 focus-visible:ring-ring flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium transition-colors outline-none focus-visible:ring-2",
         className,
       )}
+      asChild={asChild}
       {...props}
     >
       {children}
-      <ChevronDownIcon className="text-muted-foreground size-4 shrink-0 transition-transform group-data-[state=open]/collapsible-trigger:rotate-180" />
+      {!asChild ? (
+        <ChevronDownIcon className="text-muted-foreground size-4 shrink-0 transition-transform group-data-[state=open]/collapsible-trigger:rotate-180" />
+      ) : null}
     </CollapsiblePrimitive.Trigger>
   );
 }

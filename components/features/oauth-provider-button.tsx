@@ -18,7 +18,7 @@ export function OAuthProviderButton({
     <Button
       type="button"
       variant="outline"
-      className="w-full"
+      className="border-border/90 h-11 w-full rounded-full"
       disabled={disabled}
       onClick={async () => {
         const supabase = createClient();

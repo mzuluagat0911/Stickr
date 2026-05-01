@@ -1,8 +1,8 @@
 import {
+  Banknote,
   BookOpen,
-  Compass,
+  Handshake,
   MessageCircle,
-  ShoppingBag,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -15,9 +15,10 @@ export type AppNavItem = {
 
 export const APP_NAV_ITEMS: AppNavItem[] = [
   { href: "/album", label: "Álbum", Icon: BookOpen },
-  { href: "/discover", label: "Descubrir", Icon: Compass },
+  { href: "/discover", label: "Intercambio", Icon: Handshake },
   { href: "/messages", label: "Mensajes", Icon: MessageCircle },
-  { href: "/marketplace", label: "Mercado", Icon: ShoppingBag },
+  /** `\u200b` permite partir la etiqueta en bottom nav sin truncar. */
+  { href: "/marketplace", label: "Compra/\u200bventa", Icon: Banknote },
   { href: "/profile", label: "Mi perfil", Icon: User },
 ];
 

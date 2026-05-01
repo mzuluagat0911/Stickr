@@ -22,6 +22,48 @@
       "when": 1777609154226,
       "tag": "0002_clear_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777704000000,
+      "tag": "0003_find_matches",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777707600000,
+      "tag": "0004_user_profiles_insert_own",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777711200000,
+      "tag": "0005_discover_same_city",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777714800000,
+      "tag": "0006_market_intentions",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777718400000,
+      "tag": "0007_market_intentions_currency_allowed",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777722000000,
+      "tag": "0008_exchange_wants_and_discover_rank",
+      "breakpoints": true
     }
   ]
 }

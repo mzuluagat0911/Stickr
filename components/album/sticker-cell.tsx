@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CheckIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, PlusIcon, StarIcon } from "lucide-react";
 
 import type { CatalogStickerDTO, UserStickerEntryDTO } from "@/lib/album/types";
 import { cn } from "@/lib/utils";
@@ -52,6 +52,9 @@ export type StickerCellProps = {
   onSetHave: () => void;
   onSetDuplicate: (count: number) => void;
   onUnmark: () => void;
+  exchangePriority?: boolean;
+  /** Solo en faltantes; menú contextual prioridad intercambio */
+  onToggleExchangePriority?: () => void;
   registerCell?: (el: HTMLButtonElement | null) => void;
   onFocus?: () => void;
 };
@@ -65,6 +68,8 @@ export function StickerCell({
   onSetHave,
   onSetDuplicate,
   onUnmark,
+  exchangePriority = false,
+  onToggleExchangePriority,
   registerCell,
   onFocus,
 }: StickerCellProps) {
@@ -162,7 +167,14 @@ export function StickerCell({
                   {sticker.stickerNumber}
                 </span>
                 {state === "missing" ? (
-                  <PlusIcon className="size-4 shrink-0 opacity-60" />
+                  exchangePriority ? (
+                    <StarIcon
+                      className="size-4 shrink-0 fill-amber-500 text-amber-600 dark:fill-amber-400 dark:text-amber-300"
+                      aria-label="Prioridad intercambio"
+                    />
+                  ) : (
+                    <PlusIcon className="size-4 shrink-0 opacity-60" />
+                  )
                 ) : null}
                 {state === "have" ? (
                   <CheckIcon className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -201,6 +213,16 @@ export function StickerCell({
           <ContextMenuItem variant="destructive" onSelect={onUnmark}>
             Quitar marca
           </ContextMenuItem>
+          {state === "missing" && onToggleExchangePriority ? (
+            <>
+              <ContextMenuSeparator />
+              <ContextMenuItem onSelect={onToggleExchangePriority}>
+                {exchangePriority
+                  ? "Quitar prioridad en Intercambio"
+                  : "Priorizar en Intercambio"}
+              </ContextMenuItem>
+            </>
+          ) : null}
         </ContextMenuContent>
       </ContextMenu>
 

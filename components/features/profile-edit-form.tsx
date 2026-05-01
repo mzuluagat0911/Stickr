@@ -18,6 +18,7 @@ import {
   type ProfileUpdateInput,
 } from "@/lib/validations/profile";
 
+import { CityPicker } from "@/components/features/city-picker";
 import { CountryPicker } from "@/components/features/country-picker";
 import { GeolocationCapture } from "@/components/features/geolocation-capture";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { Textarea } from "@/components/ui/textarea";
 
 const VIS_OPTIONS = ["post_trade", "always", "never"] as const;
@@ -95,310 +97,103 @@ export function ProfileEditForm({
           onSubmit={form.handleSubmit((vals) => {
             const p = profileFormSchema.safeParse(vals);
             if (!p.success) {
-              toast.error(p.error.issues[0]?.message ?? "Revisá el formulario");
+              toast.error(p.error.issues[0]?.message ?? "Revisa el formulario");
               return;
             }
             onSubmit(p.data);
           })}
-          className="space-y-8"
+          className="space-y-10"
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Foto de perfil</CardTitle>
-              <CardDescription>
-                Subí una imagen JPG, PNG o WebP (máx. 2 MB). Se guarda en
-                Supabase Storage (bucket «avatars»).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <AvatarUploadSection initialUrl={avatarUrl} />
-            </CardContent>
-          </Card>
+          <section className="space-y-3">
+            <SectionEyebrow>Foto visible</SectionEyebrow>
+            <Card>
+              <CardHeader>
+                <CardTitle>Foto de perfil</CardTitle>
+                <CardDescription>
+                  Subí una imagen JPG, PNG o WebP (máx. 2 MB). Se guarda en
+                  Supabase Storage (bucket «avatars»).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <AvatarUploadSection initialUrl={avatarUrl} />
+              </CardContent>
+            </Card>
+          </section>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Datos públicos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="displayName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre público</FormLabel>
-                    <FormControl>
-                      <Input
-                        id="displayName"
-                        placeholder="Cómo te ven otros"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio ({bioLen}/200)</FormLabel>
-                    <FormControl>
-                      <Textarea className="min-h-24 resize-y" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
+          <section className="space-y-3">
+            <SectionEyebrow>Identidad</SectionEyebrow>
+            <Card>
+              <CardHeader>
+                <CardTitle>Datos públicos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="countryCode"
+                  name="displayName"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel>Nombre público</FormLabel>
                       <FormControl>
-                        <CountryPicker
-                          label="País"
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={pending}
+                        <Input
+                          id="displayName"
+                          placeholder="Cómo te ven otros"
+                          {...field}
                         />
                       </FormControl>
-                      <p className="text-muted-foreground text-xs">
-                        {flag} Código ISO del perfil.
-                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="city"
+                  name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Ciudad</FormLabel>
+                      <FormLabel>Bio ({bioLen}/200)</FormLabel>
                       <FormControl>
-                        <Input {...field} autoComplete="address-level2" />
+                        <Textarea className="min-h-24 resize-y" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-              <FormField
-                control={form.control}
-                name="albumEdition"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Edición del álbum</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={pending}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Elegí edición" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ALBUM_EDITION_OPTIONS.map((o) => (
-                          <SelectItem key={o.value} value={o.value}>
-                            {o.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="languages"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Idiomas</FormLabel>
-                    <div className="flex flex-wrap gap-2">
-                      {PROFILE_LANGUAGE_OPTIONS.map((opt) => {
-                        const on = field.value?.includes(opt.code) ?? false;
-                        return (
-                          <Button
-                            key={opt.code}
-                            type="button"
-                            variant={on ? "default" : "outline"}
-                            size="sm"
-                            className="rounded-full"
-                            onClick={() => {
-                              const cur = new Set(field.value ?? []);
-                              if (on) {
-                                if (cur.size <= 1) return;
-                                cur.delete(opt.code);
-                              } else {
-                                cur.add(opt.code);
-                              }
-                              field.onChange([...cur]);
-                            }}
-                            disabled={pending}
-                          >
-                            {opt.label}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferencias de intercambio</CardTitle>
-              <CardDescription>
-                Coordinación fuera de la app según cómo querés operar.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="tradePreferences.inPerson"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
-                    <div className="space-y-1">
-                      <FormLabel>Encuentro en persona</FormLabel>
-                      <p className="text-muted-foreground text-xs">
-                        Intercambio presencial
-                      </p>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={pending}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tradePreferences.nationalShipping"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
-                    <FormLabel>Envío nacional</FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={pending}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tradePreferences.internationalShipping"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
-                    <FormLabel>Envío internacional</FormLabel>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={pending}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Métodos de contacto</CardTitle>
-              <CardDescription>
-                Tras acordar un intercambio, el contacto es externo (WhatsApp,
-                Telegram o correo).
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="preferred"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Canal preferido</FormLabel>
-                    <Select
-                      value={field.value ?? "__none__"}
-                      onValueChange={(v) =>
-                        field.onChange(
-                          v === "__none__"
-                            ? undefined
-                            : (v as NonNullable<ProfileFormInput["preferred"]>),
-                        )
-                      }
-                      disabled={pending}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Opcional" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">
-                          Sin preferencia
-                        </SelectItem>
-                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                        <SelectItem value="telegram">Telegram</SelectItem>
-                        <SelectItem value="email">Correo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <Label>WhatsApp</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
-                    name="whatsappCountry"
+                    name="countryCode"
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
                           <CountryPicker
-                            label="País del número"
-                            value={
-                              field.value ??
-                              form.getValues("countryCode") ??
-                              "AR"
-                            }
-                            onChange={field.onChange}
+                            label="País"
+                            value={field.value}
+                            onChange={(code) => {
+                              field.onChange(code);
+                              form.setValue("city", "");
+                            }}
                             disabled={pending}
                           />
                         </FormControl>
+                        <p className="text-muted-foreground text-xs">
+                          {flag} Código ISO del perfil.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <FormField
                     control={form.control}
-                    name="whatsappNational"
+                    name="city"
                     render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel>
-                          Número (sin prefijo internacional)
-                        </FormLabel>
+                      <FormItem>
                         <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="11 1234 5678"
-                            autoComplete="tel-national"
+                          <CityPicker
+                            id="city"
+                            label="Ciudad"
+                            countryCode={countryForBadge || ""}
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={pending}
                           />
                         </FormControl>
                         <FormMessage />
@@ -408,10 +203,10 @@ export function ProfileEditForm({
                 </div>
                 <FormField
                   control={form.control}
-                  name="whatsappVisibility"
+                  name="albumEdition"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Visibilidad WhatsApp</FormLabel>
+                      <FormLabel>Edición del álbum</FormLabel>
                       <Select
                         value={field.value}
                         onValueChange={field.onChange}
@@ -419,115 +214,404 @@ export function ProfileEditForm({
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
-                            <SelectValue />
+                            <SelectValue placeholder="Elige edición" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {VIS_OPTIONS.map((v) => (
-                            <SelectItem key={v} value={v}>
-                              {VISIBILITY_LABELS[v]}
+                          {ALBUM_EDITION_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
                 <FormField
                   control={form.control}
-                  name="telegramUsername"
+                  name="languages"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Telegram</FormLabel>
+                      <FormLabel>Idiomas</FormLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {PROFILE_LANGUAGE_OPTIONS.map((opt) => {
+                          const on = field.value?.includes(opt.code) ?? false;
+                          return (
+                            <Button
+                              key={opt.code}
+                              type="button"
+                              variant={on ? "default" : "outline"}
+                              size="sm"
+                              className="rounded-full"
+                              onClick={() => {
+                                const cur = new Set(field.value ?? []);
+                                if (on) {
+                                  if (cur.size <= 1) return;
+                                  cur.delete(opt.code);
+                                } else {
+                                  cur.add(opt.code);
+                                }
+                                field.onChange([...cur]);
+                              }}
+                              disabled={pending}
+                            >
+                              {opt.label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="space-y-3">
+            <SectionEyebrow>Intercambios</SectionEyebrow>
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferencias de intercambio</CardTitle>
+                <CardDescription>
+                  Coordinación fuera de la app según cómo quieras operar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="tradePreferences.inPerson"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <div className="space-y-1">
+                        <FormLabel>Encuentro en persona</FormLabel>
+                        <p className="text-muted-foreground text-xs">
+                          Intercambio presencial
+                        </p>
+                      </div>
                       <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="usuario (sin @)"
-                          autoComplete="username"
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
                         />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="telegramVisibility"
+                  name="tradePreferences.nationalShipping"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Visibilidad Telegram</FormLabel>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={pending}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {VIS_OPTIONS.map((v) => (
-                            <SelectItem key={v} value={v}>
-                              {VISIBILITY_LABELS[v]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-3 rounded-lg border p-4">
-                <FormField
-                  control={form.control}
-                  name="emailPublic"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correo público</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <FormLabel>Envío nacional</FormLabel>
                       <FormControl>
-                        <Input {...field} type="email" />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
+                        />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="emailVisibility"
+                  name="tradePreferences.internationalShipping"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <FormLabel>Envío internacional</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                  Venta de figuritas
+                </p>
+                <FormField
+                  control={form.control}
+                  name="salePreferences.inPerson"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <div className="space-y-1">
+                        <FormLabel>Venta en persona</FormLabel>
+                        <p className="text-muted-foreground text-xs">
+                          Entrega local / encuentro cobrando
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="salePreferences.nationalShipping"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <FormLabel>Venta con envío nacional</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="salePreferences.internationalShipping"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3">
+                      <FormLabel>Venta con envío internacional</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={pending}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="space-y-3">
+            <SectionEyebrow>Contacto</SectionEyebrow>
+            <Card>
+              <CardHeader>
+                <CardTitle>Métodos de contacto</CardTitle>
+                <CardDescription>
+                  Tras acordar un intercambio, el contacto es externo (WhatsApp,
+                  Telegram o correo).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="preferred"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Visibilidad correo</FormLabel>
+                      <FormLabel>Canal preferido</FormLabel>
                       <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                        value={field.value ?? "__none__"}
+                        onValueChange={(v) =>
+                          field.onChange(
+                            v === "__none__"
+                              ? undefined
+                              : (v as NonNullable<
+                                  ProfileFormInput["preferred"]
+                                >),
+                          )
+                        }
                         disabled={pending}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
-                            <SelectValue />
+                            <SelectValue placeholder="Opcional" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {VIS_OPTIONS.map((v) => (
-                            <SelectItem key={v} value={v}>
-                              {VISIBILITY_LABELS[v]}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="__none__">
+                            Sin preferencia
+                          </SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                          <SelectItem value="telegram">Telegram</SelectItem>
+                          <SelectItem value="email">Correo</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-            </CardContent>
-          </Card>
 
-          <GeolocationCapture cityLabel={cityLabel} />
+                <div className="space-y-3 rounded-lg border p-4">
+                  <Label>WhatsApp</Label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="whatsappCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <CountryPicker
+                              label="País del número"
+                              value={
+                                field.value ??
+                                form.getValues("countryCode") ??
+                                "AR"
+                              }
+                              onChange={field.onChange}
+                              disabled={pending}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="whatsappNational"
+                      render={({ field }) => (
+                        <FormItem className="sm:col-span-2">
+                          <FormLabel>
+                            Número (sin prefijo internacional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="11 1234 5678"
+                              autoComplete="tel-national"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="whatsappVisibility"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visibilidad WhatsApp</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={pending}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {VIS_OPTIONS.map((v) => (
+                              <SelectItem key={v} value={v}>
+                                {VISIBILITY_LABELS[v]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <FormField
+                    control={form.control}
+                    name="telegramUsername"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telegram</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="usuario (sin @)"
+                            autoComplete="username"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="telegramVisibility"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visibilidad Telegram</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={pending}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {VIS_OPTIONS.map((v) => (
+                              <SelectItem key={v} value={v}>
+                                {VISIBILITY_LABELS[v]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <FormField
+                    control={form.control}
+                    name="emailPublic"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Correo público</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="emailVisibility"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visibilidad correo</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={pending}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {VIS_OPTIONS.map((v) => (
+                              <SelectItem key={v} value={v}>
+                                {VISIBILITY_LABELS[v]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="space-y-3">
+            <SectionEyebrow>Ubicación aproximada</SectionEyebrow>
+            <GeolocationCapture cityLabel={cityLabel} />
+          </section>
 
           <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
             {pending ? "Guardando…" : "Guardar cambios"}

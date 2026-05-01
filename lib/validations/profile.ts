@@ -69,11 +69,16 @@ export const profileUpdateSchema = z.object({
     .length(2)
     .transform((s) => s.toUpperCase()),
   city: z.string().min(1, "Ciudad obligatoria").max(120),
-  albumEdition: z.string().min(1, "Elegí una edición").max(80),
+  albumEdition: z.string().min(1, "Elige una edición").max(80),
   languages: z
     .array(z.enum(["es", "en", "pt", "it", "fr", "de"]))
-    .min(1, "Elegí al menos un idioma"),
+    .min(1, "Elige al menos un idioma"),
   tradePreferences: z.object({
+    inPerson: z.boolean(),
+    nationalShipping: z.boolean(),
+    internationalShipping: z.boolean(),
+  }),
+  salePreferences: z.object({
     inPerson: z.boolean(),
     nationalShipping: z.boolean(),
     internationalShipping: z.boolean(),
@@ -92,6 +97,11 @@ export const profileFormSchema = z
     albumEdition: z.string().min(1).max(80),
     languages: z.array(z.enum(["es", "en", "pt", "it", "fr", "de"])).min(1),
     tradePreferences: z.object({
+      inPerson: z.boolean(),
+      nationalShipping: z.boolean(),
+      internationalShipping: z.boolean(),
+    }),
+    salePreferences: z.object({
       inPerson: z.boolean(),
       nationalShipping: z.boolean(),
       internationalShipping: z.boolean(),
@@ -190,6 +200,7 @@ export const profileFormSchema = z
       albumEdition: data.albumEdition,
       languages: data.languages,
       tradePreferences: data.tradePreferences,
+      salePreferences: data.salePreferences,
       contactMethods,
     };
   });

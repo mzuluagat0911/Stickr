@@ -24,6 +24,9 @@ export function buildProfileFormDefaults(
       in_person?: boolean;
       national_shipping?: boolean;
       international_shipping?: boolean;
+      sale_in_person?: boolean;
+      sale_national_shipping?: boolean;
+      sale_international_shipping?: boolean;
     } | null;
     contact_methods: ContactMethods | null;
   },
@@ -61,6 +64,13 @@ export function buildProfileFormDefaults(
       nationalShipping: profile.trade_preferences?.national_shipping ?? false,
       internationalShipping:
         profile.trade_preferences?.international_shipping ?? false,
+    },
+    salePreferences: {
+      inPerson: profile.trade_preferences?.sale_in_person ?? false,
+      nationalShipping:
+        profile.trade_preferences?.sale_national_shipping ?? false,
+      internationalShipping:
+        profile.trade_preferences?.sale_international_shipping ?? false,
     },
     whatsappCountry,
     whatsappNational,

@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** Raíz real del repo (evita que Next asuma el home por otro lockfile). */
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -15,8 +19,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: projectRoot,
   turbopack: {
-    root: path.resolve(process.cwd()),
+    root: projectRoot,
   },
   async headers() {
     return [

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -35,30 +36,52 @@ export function ForgotPasswordForm() {
   }, [state]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recuperar contraseña</CardTitle>
-        <CardDescription>
-          Te enviamos un enlace si el correo está registrado.
+    <Card className="border-border/80 w-full shadow-lg shadow-black/5">
+      <CardHeader className="space-y-2 pb-2">
+        <CardTitle className="text-xl font-semibold tracking-tight">
+          Recuperar contraseña
+        </CardTitle>
+        <CardDescription className="text-sm leading-relaxed">
+          Te enviamos un enlace al correo si la cuenta existe. Revisa la carpeta
+          de spam.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <form action={formAction} className="flex flex-col gap-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="email" className="text-foreground">
+              Correo
+            </Label>
             <Input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
+              placeholder="tu@ejemplo.com"
+              className="rounded-xl"
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Enviando…" : "Enviar enlace"}
+          <Button
+            type="submit"
+            size="lg"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-base shadow-md"
+            disabled={pending}
+          >
+            {pending ? (
+              <>
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                Enviando…
+              </>
+            ) : (
+              "Enviar enlace"
+            )}
           </Button>
           <p className="text-muted-foreground text-center text-sm">
-            <Link href="/login" className="underline">
+            <Link
+              href="/login"
+              className="text-primary hover:text-primary/90 font-medium underline-offset-4 hover:underline"
+            >
               Volver al inicio de sesión
             </Link>
           </p>

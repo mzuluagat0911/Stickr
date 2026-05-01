@@ -12,7 +12,7 @@
  * - Legendary vs gold: alternamos en 16–20; el detalle real va en migración posterior.
  * - `player_name` y `player_position` quedan null en slots de jugador (2–19).
  *
- * Ejecución: `pnpm seed:catalog` (requiere DATABASE_URL en .env.local).
+ * Ejecución: `pnpm seed:catalog` con `DATABASE_URL` o vars `SUPABASE_DB_*`.
  */
 import path from "node:path";
 
@@ -33,6 +33,8 @@ const TEAM_START = 21;
 const TOTAL_STICKERS = 980;
 const STICKERS_PER_TEAM = 20;
 const FWC = "FWC";
+
+type PostgresErrorCause = { code?: string };
 
 type CatalogRow = InferInsertModel<typeof stickerCatalog>;
 
@@ -128,17 +130,94 @@ function summarize(rows: CatalogRow[]): {
   return { byTeam, byType };
 }
 
-async function main(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL;
+/** Conexión explícita para evitar fallos parseando DATABASE_URL en algunos shells / env injectors. */
+function createSeedPostgres(): ReturnType<typeof postgres> {
+  const dbHost = process.env.SUPABASE_DB_HOST?.trim();
+  const dbPortRaw = process.env.SUPABASE_DB_PORT?.trim();
+  const dbUser = process.env.SUPABASE_DB_USER?.trim();
+  const dbPass = process.env.SUPABASE_DB_PASSWORD ?? "";
+  const rawDb = process.env.SUPABASE_DB_DATABASE?.trim() ?? "";
+  const dbName = rawDb.length > 0 ? rawDb : "postgres";
+
+  if (dbHost && dbUser && dbPass) {
+    const port = dbPortRaw ? Number(dbPortRaw) : 5432;
+    console.info(
+      `[seed] Conectando (SUPABASE_DB_*) usuario=${JSON.stringify(dbUser)} host=${dbHost}:${port} db=${dbName}`,
+    );
+    return postgres({
+      host: dbHost,
+      port,
+      database: dbName,
+      user: dbUser,
+      pass: dbPass,
+      ssl: "require",
+      prepare: false,
+      max: 1,
+      connect_timeout: 60,
+    });
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) {
     console.error(
-      "Falta DATABASE_URL. Copiá .env.local.example a .env.local y definí la conexión a Supabase/Postgres.",
+      [
+        "[seed] Falta conexión a Postgres:",
+        "  Opción A: DATABASE_URL completa",
+        "  Opción B: SUPABASE_DB_HOST, SUPABASE_DB_PORT, SUPABASE_DB_USER (ej. postgres.MIREF), SUPABASE_DB_PASSWORD, SUPABASE_DB_DATABASE=postgres",
+        "  Ejemplo usuario pooler: postgres.ylqjzrncdcvzmvopxikx",
+      ].join("\n"),
     );
     process.exit(1);
   }
 
+  let u: URL;
+  try {
+    u = new URL(databaseUrl.replace(/^postgresql:/i, "https:"));
+  } catch {
+    console.error(
+      "[seed] DATABASE_URL no es una URI válida. Copiala tal cual desde Supabase → Connect.",
+    );
+    process.exit(1);
+  }
+
+  const userDecoded = decodeURIComponent(u.username ?? "");
+  const passDecoded = decodeURIComponent(u.password ?? "");
+  const pathname = decodeURIComponent(
+    (u.pathname || "/postgres").replace(/^\//, ""),
+  );
+
+  if (!userDecoded) {
+    console.error(
+      "[seed] DATABASE_URL sin usuario. En Supabase usa postgres.TUREF (pooler) o postgres (conexión directa al puerto 5432).",
+    );
+    process.exit(1);
+  }
+
+  const port = u.port ? Number(u.port) : 5432;
+  const sslParam = u.searchParams.get("sslmode");
+  const ssl =
+    sslParam === "disable" || sslParam === "false" ? false : "require";
+
+  console.info(
+    `[seed] Conectando (DATABASE_URL parseada) usuario=${JSON.stringify(userDecoded)} host=${u.hostname}:${port} db=${pathname}`,
+  );
+
+  return postgres({
+    host: u.hostname,
+    port,
+    database: pathname,
+    user: userDecoded,
+    pass: passDecoded,
+    ssl,
+    prepare: false,
+    max: 1,
+    connect_timeout: 60,
+  });
+}
+
+async function main(): Promise<void> {
+  const client = createSeedPostgres();
   const rows = buildAllRows();
-  const client = postgres(databaseUrl, { prepare: false, max: 1 });
   const db = drizzle(client, { schema: { stickerCatalog } });
 
   const chunk = 100;
@@ -204,5 +283,27 @@ async function main(): Promise<void> {
 
 main().catch((e) => {
   console.error(e);
+  const cause =
+    typeof e === "object" &&
+    e !== null &&
+    "cause" in e &&
+    typeof (e as { cause: unknown }).cause === "object" &&
+    (e as { cause: unknown }).cause !== null
+      ? ((e as { cause: PostgresErrorCause }).cause as PostgresErrorCause)
+      : (e as PostgresErrorCause);
+  if (
+    "code" in (cause ?? {}) &&
+    (cause as PostgresErrorCause).code === "28P01"
+  ) {
+    console.error(
+      [
+        "",
+        "[seed] Error 28P01: contraseña o usuario rechazados por Postgres.",
+        "  1) En Supabase: Settings → Database → Reset database password; Connect → URI → copiar de nuevo.",
+        "  2) Con pooler (puerto 6543): el usuario suele ser postgres.TUREF (con punto), NO sólo postgres.",
+        "  3) Probá también variables SUPABASE_DB_HOST / port / usuario / PASSWORD / database (ver .env.local.example).",
+      ].join("\n"),
+    );
+  }
   process.exit(1);
 });

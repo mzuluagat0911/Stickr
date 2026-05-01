@@ -18,7 +18,7 @@ test.describe("Autenticación", () => {
    * - Perfil con onboarding_completed = true y username = E2E_USERNAME.
    *
    * El paso "signup → confirm email (mock)" depende de la config del proyecto;
-   * si tenés confirmación obligatoria, usá un usuario seed o Inbucket y omití el mock aquí.
+   * si tienes confirmación obligatoria, usa un usuario seed o Inbucket y omite el mock aquí.
    */
   test("login → header con usuario → logout", async ({ page }) => {
     const email = process.env.E2E_EMAIL;

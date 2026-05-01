@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -34,66 +35,103 @@ export function LoginForm() {
   }, [state]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Iniciar sesión</CardTitle>
-        <CardDescription>Entrá con correo o una cuenta social.</CardDescription>
+    <Card className="border-border/80 w-full shadow-lg shadow-black/5">
+      <CardHeader className="space-y-2 pb-2">
+        <CardTitle className="text-xl font-semibold tracking-tight">
+          Iniciar sesión
+        </CardTitle>
+        <CardDescription className="space-y-1 text-sm leading-relaxed">
+          <span>
+            Entra con correo o cuenta social para seguir donde lo dejaste.
+          </span>
+          <span className="text-muted-foreground block text-xs">
+            La sesión la gestiona Supabase; puedes usar correo o redes (Google /
+            Apple).
+          </span>
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-5 pt-4">
         <form action={formAction} className="flex flex-col gap-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="email" className="text-foreground">
+              Correo
+            </Label>
             <Input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
+              placeholder="tu@ejemplo.com"
+              className="rounded-xl"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password" className="text-foreground">
+              Contraseña
+            </Label>
             <Input
               id="password"
               name="password"
               type="password"
               autoComplete="current-password"
+              className="rounded-xl"
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Entrando…" : "Entrar"}
+          <Button
+            type="submit"
+            size="lg"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-base shadow-md"
+            disabled={pending}
+          >
+            {pending ? (
+              <>
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                Entrando…
+              </>
+            ) : (
+              "Entrar"
+            )}
           </Button>
         </form>
 
-        <div className="relative">
+        <div className="relative py-1">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="border-border/60 w-full border-t" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card text-muted-foreground px-2">
-              O continuar con
+          <div className="relative flex justify-center">
+            <span className="text-muted-foreground bg-card px-3 text-[11px] font-semibold tracking-[0.14em] uppercase">
+              O con
             </span>
           </div>
         </div>
 
-        <OAuthProviderButton
-          provider="google"
-          label="Google"
-          disabled={pending}
-        />
-        <OAuthProviderButton
-          provider="apple"
-          label="Apple"
-          disabled={pending}
-        />
+        <div className="flex flex-col gap-2">
+          <OAuthProviderButton
+            provider="google"
+            label="Google"
+            disabled={pending}
+          />
+          <OAuthProviderButton
+            provider="apple"
+            label="Apple"
+            disabled={pending}
+          />
+        </div>
 
-        <p className="text-muted-foreground text-center text-sm">
-          <Link href="/forgot-password" className="underline">
+        <p className="text-muted-foreground text-center text-sm leading-relaxed">
+          <Link
+            href="/forgot-password"
+            className="text-primary hover:text-primary/90 font-medium underline-offset-4 hover:underline"
+          >
             ¿Olvidaste tu contraseña?
           </Link>
-          {" · "}
-          <Link href="/signup" className="underline">
+          <span className="text-muted-foreground/70 mx-1.5">·</span>
+          <Link
+            href="/signup"
+            className="text-primary hover:text-primary/90 font-medium underline-offset-4 hover:underline"
+          >
             Crear cuenta
           </Link>
         </p>

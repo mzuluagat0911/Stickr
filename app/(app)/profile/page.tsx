@@ -1,9 +1,11 @@
 import countries from "i18n-iso-countries";
 import es from "i18n-iso-countries/langs/es.json";
+import { UserRoundXIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { countryFlagEmoji } from "@/lib/data/countries";
 import { mapboxStaticPreviewUrl } from "@/lib/mapbox-static";
 import type { ContactMethods } from "@/lib/types/profile";
@@ -18,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 countries.registerLocale(es as import("i18n-iso-countries").LocaleData);
 
@@ -34,10 +37,7 @@ function channelConfigured(
 }
 
 export default async function ProfilePage() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (!hasPublicSupabaseConfig()) {
     redirect("/login");
   }
 
@@ -59,11 +59,18 @@ export default async function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Mi perfil</h1>
-        <p className="text-muted-foreground text-sm">
-          No encontramos tu perfil. Completá el onboarding o contactá soporte.
-        </p>
+        <EmptyState
+          icon={UserRoundXIcon}
+          title="Todavía no tenemos tu perfil"
+          description="Suele pasar al registrarte: completa el onboarding para crear tu ficha visible y seguir usando el álbum."
+          action={
+            <Button size="lg" className="rounded-full px-8" asChild>
+              <Link href="/onboarding">Ir al onboarding</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -208,7 +215,7 @@ export default async function ProfilePage() {
               <p className="text-muted-foreground text-sm">
                 {coords
                   ? "Configurá NEXT_PUBLIC_MAPBOX_TOKEN para ver el mapa estático."
-                  : "Todavía no hay ubicación aproximada. Podés añadirla desde editar perfil."}
+                  : "Todavía no hay ubicación aproximada. Puedes añadirla desde editar perfil."}
               </p>
             )}
             <p className="text-muted-foreground text-sm">

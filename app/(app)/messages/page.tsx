@@ -9,7 +9,7 @@ export default function MessagesPage() {
       <EmptyState
         icon={MessageCircle}
         title="Tus conversaciones"
-        description="Acá vas a chatear con otros coleccionistas para coordinar intercambios."
+        description="Aquí podrás chatear con otros coleccionistas para coordinar intercambios (pronto)."
       />
     </div>
   );

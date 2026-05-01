@@ -2,13 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { Button } from "@/components/ui/button";
 
 export default async function HomePage() {
-  if (
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (hasPublicSupabaseConfig()) {
     const supabase = await createClient();
     const {
       data: { user },
@@ -35,9 +33,9 @@ export default async function HomePage() {
             Stickr
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed md:text-xl">
-            Intercambiá figuritas del álbum Panini Mundial 2026 con
-            coleccionistas de confianza. Armá tu álbum, chateá y cerrá
-            intercambios en un solo lugar.
+            Intercambia figuritas del álbum Panini Mundial 2026 con
+            coleccionistas de confianza. Arma tu álbum y coordina intercambios
+            en un solo lugar.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -54,8 +52,8 @@ export default async function HomePage() {
           </Button>
         </div>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Registrate con email o con Google / Apple. Sin spam: solo lo necesario
-          para coordinar intercambios.
+          Regístrate con correo o con Google / Apple. Sin spam: solo lo
+          necesario para coordinar intercambios.
         </p>
       </div>
     </main>

@@ -2,16 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { buildProfileFormDefaults } from "@/lib/profile-form-defaults";
 
 import { ProfileEditForm } from "@/components/features/profile-edit-form";
 import { Button } from "@/components/ui/button";
 
 export default async function ProfileEditPage() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (!hasPublicSupabaseConfig()) {
     redirect("/login");
   }
 

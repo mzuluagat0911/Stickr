@@ -88,6 +88,9 @@ export const userProfiles = pgTable(
       in_person?: boolean;
       national_shipping?: boolean;
       international_shipping?: boolean;
+      sale_in_person?: boolean;
+      sale_national_shipping?: boolean;
+      sale_international_shipping?: boolean;
     }>(),
     contactMethods: jsonb("contact_methods").$type<ContactMethods>(),
     privacySettings: jsonb("privacy_settings").$type<PrivacySettings>(),
@@ -151,6 +154,26 @@ export const userStickers = pgTable(
       sql.raw(`"status" IN ('have', 'duplicate', 'missing')`),
     ),
     index("user_stickers_sticker_id_status").on(t.stickerId, t.status),
+  ],
+);
+
+export const exchangeWants = pgTable(
+  "exchange_wants",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    stickerId: text("sticker_id")
+      .notNull()
+      .references(() => stickerCatalog.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.stickerId] }),
+    index("exchange_wants_user_id_idx").on(t.userId),
+    index("exchange_wants_sticker_id_idx").on(t.stickerId),
   ],
 );
 
@@ -286,6 +309,48 @@ export const listings = pgTable(
       t.status,
       t.priceCents,
     ),
+  ],
+);
+
+export const marketIntentions = pgTable(
+  "market_intentions",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    albumEdition: text("album_edition").notNull(),
+    stickerNumber: integer("sticker_number").notNull(),
+    stickerId: text("sticker_id")
+      .notNull()
+      .references(() => stickerCatalog.id, { onDelete: "restrict" }),
+    kind: text("kind").notNull(),
+    shippingScope: text("shipping_scope").notNull(),
+    priceCents: integer("price_cents").notNull(),
+    currency: text("currency").notNull().default("ARS"),
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    check("market_intentions_kind_check", sql.raw(`"kind" IN ('buy', 'sell')`)),
+    check(
+      "market_intentions_scope_check",
+      sql.raw(`"shipping_scope" IN ('local_only', 'national')`),
+    ),
+    check(
+      "market_intentions_status_check",
+      sql.raw(`"status" IN ('active', 'cancelled', 'filled')`),
+    ),
+    check(
+      "market_intentions_currency_check",
+      sql.raw(`"currency" IN ('ARS', 'USD', 'COP', 'EUR')`),
+    ),
+    check(
+      "market_intentions_currency_len_check",
+      sql.raw(`char_length("currency") = 3`),
+    ),
+    index("market_intentions_status_created_idx").on(t.status, t.createdAt),
   ],
 );
 

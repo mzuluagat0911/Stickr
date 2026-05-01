@@ -2,16 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import type { PrivacySettings } from "@/lib/types/profile";
 
 import { PrivacySettingsForm } from "@/components/features/privacy-settings-form";
 import { Button } from "@/components/ui/button";
 
 export default async function PrivacyPage() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (!hasPublicSupabaseConfig()) {
     redirect("/login");
   }
 

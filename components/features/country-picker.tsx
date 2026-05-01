@@ -41,6 +41,8 @@ export function CountryPicker({
     ).slice(0, 80);
   }, [query]);
 
+  const pickerLabel = `${label}${selected ? `: ${selected.name}` : ": país no seleccionado"}`;
+
   return (
     <div className={cn("relative space-y-2", className)}>
       {label ? <Label htmlFor={id}>{label}</Label> : null}
@@ -50,7 +52,9 @@ export function CountryPicker({
         id={id}
         disabled={disabled}
         aria-expanded={open}
-        className="h-auto min-h-10 w-full justify-start px-3 py-2 text-left font-normal"
+        aria-haspopup="listbox"
+        aria-label={pickerLabel}
+        className="focus-visible:ring-ring focus-visible:border-ring border-input h-auto min-h-10 w-full justify-start px-3 py-2 text-left font-normal focus-visible:ring-3"
         onClick={() => setOpen((o) => !o)}
       >
         {selected ? (
@@ -62,7 +66,7 @@ export function CountryPicker({
             </span>
           </span>
         ) : (
-          <span className="text-muted-foreground">Elegí país</span>
+          <span className="text-muted-foreground">Elige país</span>
         )}
       </Button>
       {open ? (

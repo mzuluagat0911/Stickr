@@ -17,7 +17,7 @@ test.describe("Álbum", () => {
     await page.waitForURL(/\/(album|onboarding)/, { timeout: 20000 });
 
     if (page.url().includes("/onboarding")) {
-      test.skip(true, "Completá onboarding para probar el álbum.");
+      test.skip(true, "Completa el onboarding para probar el álbum.");
     }
 
     await page.goto("/album");

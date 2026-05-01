@@ -88,6 +88,11 @@ export async function markStickerHaveAction(
   if (error) {
     return fail(error.message);
   }
+  await supabase
+    .from("exchange_wants")
+    .delete()
+    .eq("user_id", u.userId)
+    .eq("sticker_id", parsed.data);
   return ok();
 }
 
@@ -122,6 +127,11 @@ export async function markStickerDuplicateAction(
   if (error) {
     return fail(error.message);
   }
+  await supabase
+    .from("exchange_wants")
+    .delete()
+    .eq("user_id", u.userId)
+    .eq("sticker_id", parsedId.data);
   return ok();
 }
 
@@ -187,6 +197,11 @@ export async function bulkMarkStickersAction(
         { onConflict: "user_id,sticker_id" },
       );
       if (error) return fail(error.message);
+      await supabase
+        .from("exchange_wants")
+        .delete()
+        .eq("user_id", u.userId)
+        .eq("sticker_id", item.stickerId);
       continue;
     }
 
@@ -205,6 +220,11 @@ export async function bulkMarkStickersAction(
       { onConflict: "user_id,sticker_id" },
     );
     if (error) return fail(error.message);
+    await supabase
+      .from("exchange_wants")
+      .delete()
+      .eq("user_id", u.userId)
+      .eq("sticker_id", item.stickerId);
   }
 
   return ok();

@@ -32,7 +32,9 @@ export function AppBottomNav() {
                   className={cn("size-6 shrink-0", active && "stroke-[2.25]")}
                   aria-hidden
                 />
-                <span className="max-w-full truncate">{label}</span>
+                <span className="line-clamp-2 max-w-full text-center text-[9px] leading-tight font-medium sm:text-[10px]">
+                  {label}
+                </span>
               </Link>
             </li>
           );

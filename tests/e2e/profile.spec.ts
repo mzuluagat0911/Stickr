@@ -17,7 +17,7 @@ test.describe("Perfil", () => {
     await page.getByRole("button", { name: /entrar/i }).click();
     await page.waitForURL(/\/(album|onboarding|profile)/, { timeout: 25_000 });
     if (page.url().includes("/onboarding")) {
-      test.skip(true, "Completá onboarding para el usuario E2E.");
+      test.skip(true, "Completa el onboarding para el usuario E2E.");
     }
 
     await page.goto("/profile/edit");
