@@ -40,11 +40,11 @@ export async function createMarketIntentAction(
     .eq("id", user.id)
     .maybeSingle();
 
-  if (pErr || !profile?.album_edition) {
-    return fail("No pudimos obtener tu edición de álbum.");
+  if (pErr) {
+    return fail(pErr.message);
   }
 
-  const profileEdition = String(profile.album_edition ?? "").trim();
+  const profileEdition = String(profile?.album_edition ?? "").trim();
   const edition = profileEdition || "PR-International";
 
   const { data: catRow, error: cErr } = await supabase

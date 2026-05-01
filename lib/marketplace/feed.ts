@@ -63,16 +63,15 @@ export async function getMarketFeed(): Promise<
       .select("id,username")
       .in("id", userIds);
 
-    if (nErr) {
-      return { ok: false, message: nErr.message };
+    const usernameById = new Map<string, string | null>();
+    if (!nErr && names) {
+      for (const u of names as {
+        id: string;
+        username: string | null;
+      }[]) {
+        usernameById.set(u.id, u.username);
+      }
     }
-
-    const usernameById = new Map(
-      ((names ?? []) as { id: string; username: string | null }[]).map((u) => [
-        u.id,
-        u.username,
-      ]),
-    );
 
     const intents: MarketFeedIntent[] = [];
     for (const r of list) {
@@ -82,12 +81,12 @@ export async function getMarketFeed(): Promise<
         r.shipping_scope === "national" ? "national" : "local_only";
       intents.push({
         id: r.id,
-        stickerNumber: r.sticker_number,
+        stickerNumber: Number(r.sticker_number),
         stickerId: r.sticker_id,
         kind,
         shippingScope,
         priceCents: Number(r.price_cents),
-        currency: r.currency,
+        currency: typeof r.currency === "string" ? r.currency : "ARS",
         albumEdition: r.album_edition,
         createdAt: r.created_at,
         userId: r.user_id,

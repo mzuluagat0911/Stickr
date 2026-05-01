@@ -10,7 +10,7 @@ export default function AppGroupLayout({
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <AppSidebar className="hidden md:flex" />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 md:py-8 md:pb-8">
+        <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-7 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-6 md:py-9 md:pb-10">
           {children}
         </div>
       </div>

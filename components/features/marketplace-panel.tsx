@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { CircleArrowDown, CircleArrowUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -75,6 +76,7 @@ function IntentDialog({
   editionLabel,
   suggestedCurrency,
 }: IntentDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<"local_only" | "national">("local_only");
   const [currency, setCurrency] =
@@ -131,6 +133,7 @@ function IntentDialog({
               if (res.ok && res.data?.summary) {
                 toast.success(res.data.summary);
                 setOpen(false);
+                router.refresh();
               } else if (!res.ok) {
                 toast.error(res.message);
               }
@@ -249,11 +252,11 @@ function IntentDialog({
               <span className="tabular-nums">4200,50</span>.
             </p>
           </div>
-          <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:gap-3">
+          <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="submit"
               size="lg"
-              className="rounded-2xl font-semibold tracking-tight sm:w-full"
+              className="w-full rounded-2xl font-semibold tracking-tight sm:w-auto"
               disabled={pending}
             >
               {pending ? (
@@ -292,6 +295,7 @@ export function MarketplacePanel({
   feedError,
   currentUserId,
 }: Props) {
+  const router = useRouter();
   const [cancelPendingId, setCancelPendingId] = useState<string | null>(null);
 
   const cancelIntent = (id: string) => {
@@ -303,6 +307,7 @@ export function MarketplacePanel({
         toast.success(
           typeof res.data === "string" ? res.data : "Publicación cancelada.",
         );
+        router.refresh();
       } else {
         toast.error(res.message);
       }
@@ -371,6 +376,8 @@ export function MarketplacePanel({
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:gap-5">
             {intents.map((row) => {
+              const stickerNum = Number(row.stickerNumber);
+              const priceCents = Number(row.priceCents);
               const mine = Boolean(
                 currentUserId && row.userId === currentUserId,
               );
@@ -403,7 +410,9 @@ export function MarketplacePanel({
                       <CardDescription className="text-muted-foreground text-xs leading-snug sm:text-[0.8125rem]">
                         Figurita n.º{" "}
                         <span className="text-foreground font-medium tracking-tight tabular-nums">
-                          {formatIntegerEs(row.stickerNumber)}
+                          {formatIntegerEs(
+                            Number.isFinite(stickerNum) ? stickerNum : 0,
+                          )}
                         </span>{" "}
                         · {scopeLabel(row.shippingScope)} · Catálogo{" "}
                         {row.albumEdition}
@@ -412,8 +421,14 @@ export function MarketplacePanel({
                     <CardContent className="space-y-2 pb-4">
                       <p className="text-foreground text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
                         {row.kind === "buy"
-                          ? `Hasta ${formatMinorCurrency(row.priceCents, row.currency)}`
-                          : formatMinorCurrency(row.priceCents, row.currency)}
+                          ? `Hasta ${formatMinorCurrency(
+                              Number.isFinite(priceCents) ? priceCents : 0,
+                              row.currency,
+                            )}`
+                          : formatMinorCurrency(
+                              Number.isFinite(priceCents) ? priceCents : 0,
+                              row.currency,
+                            )}
                       </p>
                       <p className="text-muted-foreground text-xs tabular-nums">
                         Publicado {formatPublishedAt(row.createdAt)}

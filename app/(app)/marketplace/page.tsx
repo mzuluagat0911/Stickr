@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ALBUM_EDITION_OPTIONS } from "@/lib/constants/profile";
 import { defaultMarketCurrency } from "@/lib/marketplace/currency";
 import { getMarketFeed } from "@/lib/marketplace/feed";
+import type { MarketFeedIntent } from "@/lib/marketplace/types";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 
@@ -21,13 +22,10 @@ export default async function MarketplacePage() {
     redirect("/login");
   }
 
-  let edition = "PR-International";
   let defaultCurrency = defaultMarketCurrency(null);
   let editionLabel = "PR-International";
-  let feed: Awaited<ReturnType<typeof getMarketFeed>> = {
-    ok: false,
-    message: "No pudimos cargar el marketplace en este momento.",
-  };
+  let intents: MarketFeedIntent[] = [];
+  let feedError: string | null = null;
 
   try {
     const { data: profile } = await supabase
@@ -36,23 +34,26 @@ export default async function MarketplacePage() {
       .eq("id", user.id)
       .maybeSingle();
 
-    edition =
+    const editionRaw =
       typeof profile?.album_edition === "string"
-        ? profile.album_edition
-        : "PR-International";
+        ? profile.album_edition.trim()
+        : "";
+    const edition = editionRaw || "PR-International";
     defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
     editionLabel =
       ALBUM_EDITION_OPTIONS.find((o) => o.value === edition)?.label ?? edition;
 
-    feed = await getMarketFeed();
+    const feed = await getMarketFeed();
+    if (feed.ok) {
+      intents = feed.intents;
+    } else {
+      feedError = feed.message;
+    }
   } catch (e) {
-    feed = {
-      ok: false,
-      message:
-        e instanceof Error
-          ? e.message
-          : "No pudimos cargar el marketplace en este momento.",
-    };
+    feedError =
+      e instanceof Error
+        ? e.message
+        : "No pudimos cargar compra/venta. Recarga la página.";
   }
 
   return (
@@ -71,8 +72,8 @@ export default async function MarketplacePage() {
       <MarketplacePanel
         editionLabel={editionLabel}
         defaultCurrency={defaultCurrency}
-        intents={feed.ok ? feed.intents : []}
-        feedError={feed.ok ? null : feed.message}
+        intents={intents}
+        feedError={feedError}
         currentUserId={user.id}
       />
     </div>

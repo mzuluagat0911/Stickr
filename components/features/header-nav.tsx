@@ -48,8 +48,9 @@ function HeaderNavLink({
     <Link
       href={href}
       className={cn(
-        "text-muted-foreground hover:text-foreground shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-        active && "bg-primary/10 text-primary ring-primary/25 ring-1",
+        "text-muted-foreground hover:text-foreground shrink-0 rounded-full px-3 py-1.5 text-sm font-medium tracking-tight transition-colors duration-150",
+        active &&
+          "bg-foreground/[0.07] text-foreground ring-foreground/[0.08] ring-1 dark:bg-white/[0.08] dark:text-white dark:ring-white/[0.12]",
       )}
       aria-current={active ? "page" : undefined}
     >
@@ -71,10 +72,10 @@ export function HeaderNav({
   if (!user) {
     const signupActive = pathname === "/signup";
     return (
-      <header className="bg-background/70 border-border/70 sticky top-0 z-20 flex items-center justify-between gap-2 border-b px-4 py-3 backdrop-blur-md">
+      <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-20 flex items-center justify-between gap-2 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
         <Link
           href="/"
-          className="text-primary shrink-0 font-semibold tracking-tight"
+          className="text-foreground shrink-0 text-[17px] font-semibold tracking-[-0.03em]"
         >
           Stickr
         </Link>
@@ -85,7 +86,7 @@ export function HeaderNav({
             <Button
               className={cn(
                 "rounded-full",
-                signupActive && "ring-primary/35 ring-2",
+                signupActive && "ring-foreground/15 ring-2 dark:ring-white/20",
               )}
             >
               Registrarse
@@ -100,11 +101,11 @@ export function HeaderNav({
   const initial = label.slice(0, 2).toUpperCase();
 
   return (
-    <header className="bg-background/70 border-border/70 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-md">
+    <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Link
           href="/album"
-          className="text-primary font-semibold tracking-tight"
+          className="text-foreground text-[17px] font-semibold tracking-[-0.03em]"
         >
           Stickr
         </Link>
@@ -121,7 +122,7 @@ export function HeaderNav({
       <div className="flex items-center gap-1">
         <ThemeToggle />
         <DropdownMenu>
-          <DropdownMenuTrigger className="border-border/70 bg-background/70 flex h-8 items-center gap-2 rounded-full border px-2 text-sm font-medium outline-none">
+          <DropdownMenuTrigger className="border-border/50 bg-background/80 hover:bg-muted/80 dark:bg-background/40 flex h-9 items-center gap-2 rounded-full border px-2 text-sm font-medium tracking-tight transition-colors outline-none dark:hover:bg-white/[0.06]">
             <Avatar className="size-8">
               {profile?.avatar_url ? (
                 <AvatarImage src={profile.avatar_url} alt="" />

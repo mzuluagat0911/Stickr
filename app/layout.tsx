@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
 
 import { Header } from "@/components/features/header";
 
@@ -8,18 +7,11 @@ import "./globals.css";
 
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Stickr",
+  title: {
+    default: "Stickr",
+    template: "%s · Stickr",
+  },
   description: "Intercambios de figuritas Mundial 2026",
 };
 
@@ -29,11 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="es"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="es" suppressHydrationWarning className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         <Providers>
           <Suspense
