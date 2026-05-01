@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function proxy(request: NextRequest) {
+export function proxy() {
   // Temporalmente desactivado en Edge por estabilidad en Vercel.
   // La autorización y redirecciones siguen verificándose en páginas y server actions.
-  return NextResponse.next({ request });
+  return NextResponse.next();
 }
 
 export const config = {
