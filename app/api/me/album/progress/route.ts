@@ -1,8 +1,10 @@
-import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 
-import { createClient } from "@/lib/supabase/server";
+import { computeAlbumProgress } from "@/lib/album/progress";
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
-import { AlbumGrid } from "@/components/album/album-grid";
+import { createClient } from "@/lib/supabase/server";
+
+export const revalidate = 60;
 
 type CatalogRow = {
   id: string;
@@ -15,7 +17,7 @@ type CatalogRow = {
   image_url: string | null;
 };
 
-function toDTO(r: CatalogRow): CatalogStickerDTO {
+function toCatalogDto(r: CatalogRow): CatalogStickerDTO {
   return {
     id: r.id,
     stickerNumber: r.sticker_number,
@@ -28,20 +30,14 @@ function toDTO(r: CatalogRow): CatalogStickerDTO {
   };
 }
 
-export default async function AlbumPage() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    redirect("/login");
-  }
-
+export async function GET() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) {
-    redirect("/login");
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   const { data: profile } = await supabase
@@ -62,51 +58,46 @@ export default async function AlbumPage() {
     .order("sticker_number", { ascending: true });
 
   if (cErr) {
-    throw new Error(cErr.message);
+    return NextResponse.json({ error: cErr.message }, { status: 500 });
   }
 
-  const { data: stickerRows, error: uErr } = await supabase
+  const { data: userRows, error: uErr } = await supabase
     .from("user_stickers")
     .select("sticker_id, status, duplicate_count")
     .eq("user_id", user.id);
 
   if (uErr) {
-    throw new Error(uErr.message);
+    return NextResponse.json({ error: uErr.message }, { status: 500 });
   }
 
-  const catalog = (catalogRows ?? []).map((r) => toDTO(r as CatalogRow));
+  const catalog = (catalogRows ?? []).map((r) => toCatalogDto(r as CatalogRow));
 
-  const initialUserMap: UserStickerMapDTO = {};
-  for (const r of stickerRows ?? []) {
+  const map: UserStickerMapDTO = {};
+  for (const r of userRows ?? []) {
     const st = r.status as string;
     if (st !== "have" && st !== "duplicate") continue;
-    initialUserMap[r.sticker_id as string] = {
+    map[r.sticker_id as string] = {
       status: st as "have" | "duplicate",
       duplicateCount: Number(r.duplicate_count ?? 0),
     };
   }
 
-  if (catalog.length === 0) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Mi álbum</h1>
-        <p className="text-muted-foreground text-sm">
-          No hay figuritas en el catálogo para esta edición. Ejecutá{" "}
-          <code className="bg-muted rounded px-1 py-0.5 text-xs">
-            pnpm seed:catalog
-          </code>{" "}
-          y recargá.
-        </p>
-      </div>
-    );
-  }
+  const p = computeAlbumProgress(catalog, map);
 
-  return (
-    <AlbumGrid
-      userId={user.id}
-      edition={edition}
-      catalog={catalog}
-      initialUserMap={initialUserMap}
-    />
-  );
+  const body = {
+    total: p.total,
+    have: p.have,
+    duplicates: p.duplicateStickers,
+    duplicateExtraCopies: p.duplicateExtraCopies,
+    missing: p.missing,
+    percent: p.percentCollected,
+    byTeam: p.byTeam,
+    bar: p.bar,
+  };
+
+  return NextResponse.json(body, {
+    headers: {
+      "Cache-Control": "private, s-maxage=60, stale-while-revalidate=120",
+    },
+  });
 }
