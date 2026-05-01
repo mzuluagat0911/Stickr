@@ -21,21 +21,39 @@ export default async function MarketplacePage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("album_edition, country_code")
-    .eq("id", user.id)
-    .maybeSingle();
+  let edition = "PR-International";
+  let defaultCurrency = defaultMarketCurrency(null);
+  let editionLabel = "PR-International";
+  let feed: Awaited<ReturnType<typeof getMarketFeed>> = {
+    ok: false,
+    message: "No pudimos cargar el marketplace en este momento.",
+  };
 
-  const edition =
-    typeof profile?.album_edition === "string"
-      ? profile.album_edition
-      : "PR-International";
-  const defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
-  const editionLabel =
-    ALBUM_EDITION_OPTIONS.find((o) => o.value === edition)?.label ?? edition;
+  try {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("album_edition, country_code")
+      .eq("id", user.id)
+      .maybeSingle();
 
-  const feed = await getMarketFeed();
+    edition =
+      typeof profile?.album_edition === "string"
+        ? profile.album_edition
+        : "PR-International";
+    defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
+    editionLabel =
+      ALBUM_EDITION_OPTIONS.find((o) => o.value === edition)?.label ?? edition;
+
+    feed = await getMarketFeed();
+  } catch (e) {
+    feed = {
+      ok: false,
+      message:
+        e instanceof Error
+          ? e.message
+          : "No pudimos cargar el marketplace en este momento.",
+    };
+  }
 
   return (
     <div className="space-y-8 md:space-y-10">
