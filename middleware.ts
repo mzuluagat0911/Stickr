@@ -1,11 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-import {
-  getPublicSupabaseKey,
-  getPublicSupabaseUrl,
-} from "@/lib/supabase/public-env";
-
 const AUTH_ROUTES_PREFIX = [
   "/login",
   "/signup",
@@ -75,6 +70,17 @@ function requiresOnboardingComplete(pathname: string) {
   return matchesAnyPrefix(pathname, ONBOARDING_GATED_PREFIXES);
 }
 
+function getPublicSupabaseUrl(): string | undefined {
+  const v = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  return v?.length ? v : undefined;
+}
+
+function getPublicSupabaseKey(): string | undefined {
+  const jwt = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  const pub = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+  return jwt?.length ? jwt : pub?.length ? pub : undefined;
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const url = getPublicSupabaseUrl();
@@ -103,12 +109,13 @@ export async function middleware(request: NextRequest) {
   });
 
   const {
-    data: { user },
-    error: userErr,
-  } = await supabase.auth.getUser();
-  if (userErr) {
-    console.warn("[middleware] getUser:", userErr.message);
+    data: { session },
+    error: sessionErr,
+  } = await supabase.auth.getSession();
+  if (sessionErr) {
+    console.warn("[middleware] getSession:", sessionErr.message);
   }
+  const user = session?.user ?? null;
 
   const { pathname } = request.nextUrl;
 
