@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { signInWithEmailAction } from "@/app/actions/auth";
 import type { ActionResult } from "@/lib/types/result";
 
-import { OAuthProviderButton } from "@/components/features/oauth-provider-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -41,13 +40,7 @@ export function LoginForm() {
           Iniciar sesión
         </CardTitle>
         <CardDescription className="space-y-1 text-sm leading-relaxed">
-          <span>
-            Entra con correo o cuenta social para seguir donde lo dejaste.
-          </span>
-          <span className="text-muted-foreground block text-xs">
-            La sesión la gestiona Supabase; puedes usar correo o redes (Google /
-            Apple).
-          </span>
+          <span>Entra con correo para seguir donde lo dejaste.</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5 pt-4">
@@ -95,30 +88,6 @@ export function LoginForm() {
             )}
           </Button>
         </form>
-
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <span className="border-border/60 w-full border-t" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="text-muted-foreground bg-card px-3 text-[11px] font-semibold tracking-[0.14em] uppercase">
-              O con
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <OAuthProviderButton
-            provider="google"
-            label="Google"
-            disabled={pending}
-          />
-          <OAuthProviderButton
-            provider="apple"
-            label="Apple"
-            disabled={pending}
-          />
-        </div>
 
         <p className="text-muted-foreground text-center text-sm leading-relaxed">
           <Link

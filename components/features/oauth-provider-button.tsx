@@ -10,7 +10,7 @@ export function OAuthProviderButton({
   label,
   disabled,
 }: {
-  provider: "google" | "apple";
+  provider: "google";
   label: string;
   disabled?: boolean;
 }) {
@@ -23,7 +23,9 @@ export function OAuthProviderButton({
       onClick={async () => {
         const supabase = createClient();
         const appBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-        const origin = appBase ?? window.location.origin;
+        const badLocal =
+          appBase?.includes("localhost") || appBase?.includes("127.0.0.1");
+        const origin = appBase && !badLocal ? appBase : window.location.origin;
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {

@@ -7,8 +7,7 @@ test.describe("Autenticación", () => {
       page.getByRole("heading", { name: /iniciar sesión/i }),
     ).toBeVisible();
     await expect(page.getByLabel(/correo/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Google" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Apple" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /entrar/i })).toBeVisible();
   });
 
   /**
