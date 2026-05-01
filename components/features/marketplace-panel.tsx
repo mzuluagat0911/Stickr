@@ -2,13 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CircleArrowDown, CircleArrowUp, Loader2 } from "lucide-react";
+import {
+  CircleArrowDown,
+  CircleArrowUp,
+  Loader2,
+  MessageSquare,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
   cancelMarketIntentAction,
   createMarketIntentAction,
 } from "@/app/actions/marketplace";
+import { openMarketplaceThreadAction } from "@/app/actions/messages";
 import { formatMinorCurrency } from "@/lib/format-currency";
 import { formatIntegerEs, APP_NUMBER_LOCALE } from "@/lib/format-numbers";
 import {
@@ -297,6 +303,7 @@ export function MarketplacePanel({
 }: Props) {
   const router = useRouter();
   const [cancelPendingId, setCancelPendingId] = useState<string | null>(null);
+  const [contactPendingId, setContactPendingId] = useState<string | null>(null);
 
   const cancelIntent = (id: string) => {
     setCancelPendingId(id);
@@ -309,6 +316,19 @@ export function MarketplacePanel({
         );
         router.refresh();
       } else {
+        toast.error(res.message);
+      }
+    })();
+  };
+
+  const contactAboutIntent = (intentId: string) => {
+    setContactPendingId(intentId);
+    void (async () => {
+      const res = await openMarketplaceThreadAction(intentId);
+      setContactPendingId(null);
+      if (res.ok && res.data?.conversationId) {
+        router.push(`/messages/${res.data.conversationId}`);
+      } else if (!res.ok) {
         toast.error(res.message);
       }
     })();
@@ -457,7 +477,35 @@ export function MarketplacePanel({
                           )}
                         </Button>
                       </CardFooter>
-                    ) : null}
+                    ) : (
+                      <CardFooter className="border-border/50 flex flex-wrap gap-2 border-t pt-3 pb-4">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="rounded-xl text-xs font-medium sm:text-sm"
+                          disabled={contactPendingId === row.id}
+                          onClick={() => contactAboutIntent(row.id)}
+                        >
+                          {contactPendingId === row.id ? (
+                            <>
+                              <Loader2
+                                className="mr-2 size-3.5 shrink-0 animate-spin"
+                                aria-hidden
+                              />
+                              Abriendo…
+                            </>
+                          ) : (
+                            <>
+                              <MessageSquare
+                                className="mr-2 size-3.5 shrink-0"
+                                aria-hidden
+                              />
+                              Contactar
+                            </>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    )}
                   </Card>
                 </li>
               );

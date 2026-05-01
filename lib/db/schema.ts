@@ -187,13 +187,12 @@ export const conversations = pgTable(
     userB: uuid("user_b")
       .notNull()
       .references(() => userProfiles.id, { onDelete: "cascade" }),
+    /** Publicación de marketplace que originó el hilo (único por par + intención; ver migración 0010). */
+    marketIntentionId: uuid("market_intention_id"),
     createdAt: timestamp("created_at", { withTimezone: true }),
     lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
   },
-  (t) => [
-    unique("conversations_user_a_user_b").on(t.userA, t.userB),
-    check("conversations_user_order", sql.raw(`"user_a" < "user_b"`)),
-  ],
+  () => [check("conversations_user_order", sql.raw(`"user_a" < "user_b"`))],
 );
 
 export const messages = pgTable(
