@@ -12,10 +12,12 @@ const AUTH_ROUTES_PREFIX = [
 const SESSION_ROUTE_PREFIXES = [
   "/album",
   "/onboarding",
+  "/onboarding/share-location",
   "/discover",
   "/messages",
   "/marketplace",
   "/profile",
+  "/privacy",
 ] as const;
 
 const ONBOARDING_GATED_PREFIXES = [
@@ -24,6 +26,7 @@ const ONBOARDING_GATED_PREFIXES = [
   "/messages",
   "/marketplace",
   "/profile",
+  "/privacy",
 ] as const;
 
 /**
@@ -96,6 +99,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (onboardingDone && pathname.startsWith("/onboarding")) {
+      if (pathname === "/onboarding/share-location") {
+        return response;
+      }
       return redirectTo(request, "/album");
     }
 

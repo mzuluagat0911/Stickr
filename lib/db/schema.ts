@@ -15,6 +15,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { ContactMethods, PrivacySettings } from "@/lib/types/profile";
+
 /**
  * Geography Point en SRID 4326 (PostGIS).
  * Valores: WKT ("POINT(lon lat)") o formato que use el driver `postgres`.
@@ -87,6 +89,8 @@ export const userProfiles = pgTable(
       national_shipping?: boolean;
       international_shipping?: boolean;
     }>(),
+    contactMethods: jsonb("contact_methods").$type<ContactMethods>(),
+    privacySettings: jsonb("privacy_settings").$type<PrivacySettings>(),
     ratingAvg: numeric("rating_avg", { precision: 3, scale: 2 })
       .notNull()
       .default("0"),
@@ -109,6 +113,10 @@ export const userProfiles = pgTable(
     check(
       "user_profiles_bio_len",
       sql.raw(`"bio" IS NULL OR char_length("bio") <= 200`),
+    ),
+    check(
+      "user_profiles_display_name_len",
+      sql.raw(`"display_name" IS NULL OR char_length("display_name") <= 50`),
     ),
     check(
       "user_profiles_country_code_len",

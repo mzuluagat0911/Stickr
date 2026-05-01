@@ -159,7 +159,7 @@ export async function completeOnboardingAction(
     return fail(error.message);
   }
 
-  redirect("/album");
+  redirect("/onboarding/share-location");
 }
 
 export async function signOutAction(): Promise<void> {

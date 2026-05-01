@@ -15,6 +15,13 @@
       "when": 1777606900742,
       "tag": "0001_bright_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777609154226,
+      "tag": "0002_clear_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }
