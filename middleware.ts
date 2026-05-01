@@ -9,6 +9,27 @@ const AUTH_ROUTES_PREFIX = [
   "/reset-password",
 ];
 
+const SESSION_ROUTE_PREFIXES = [
+  "/album",
+  "/onboarding",
+  "/discover",
+  "/messages",
+  "/marketplace",
+  "/profile",
+] as const;
+
+const ONBOARDING_GATED_PREFIXES = [
+  "/album",
+  "/discover",
+  "/messages",
+  "/marketplace",
+  "/profile",
+] as const;
+
+function matchesAnyPrefix(pathname: string, prefixes: readonly string[]) {
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 function isAuthRoute(pathname: string) {
   return AUTH_ROUTES_PREFIX.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
@@ -16,7 +37,11 @@ function isAuthRoute(pathname: string) {
 }
 
 function requiresSession(pathname: string) {
-  return pathname.startsWith("/album") || pathname.startsWith("/onboarding");
+  return matchesAnyPrefix(pathname, SESSION_ROUTE_PREFIXES);
+}
+
+function requiresOnboardingComplete(pathname: string) {
+  return matchesAnyPrefix(pathname, ONBOARDING_GATED_PREFIXES);
 }
 
 export async function middleware(request: NextRequest) {
@@ -56,9 +81,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (!onboardingDone && pathname.startsWith("/album")) {
+    if (!onboardingDone && requiresOnboardingComplete(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = "/onboarding";
+      url.search = "";
       return NextResponse.redirect(url);
     }
   }

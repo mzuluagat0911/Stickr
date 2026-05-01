@@ -3,15 +3,18 @@
 ## Estado actual
 
 - Next.js (App Router) + TypeScript + Tailwind + ESLint + alias `@/`. Ver `AGENTS.md` por cambios de la versión de Next.
-- Drizzle + Supabase (cliente anon en browser; cookies con `@supabase/ssr` en server y middleware). **No** usar `SUPABASE_SERVICE_ROLE_KEY` en cliente; solo en server actions / route handlers donde sea imprescindible (no está en el flujo auth actual).
+- Drizzle + Supabase (cliente anon en browser; cookies con `@supabase/ssr` en server y middleware). **No** usar `SUPABASE_SERVICE_ROLE_KEY` en cliente; solo en server actions / route handlers donde sea imprescindible (el script `scripts/seed-test-users.ts` la usa para crear usuarios de desarrollo).
 - **`lib/supabase/`**: `server.ts` (`createServerClient`), `browser.ts` (`createBrowserClient`), `middleware.ts` (`updateSession` con `getAll`/`setAll`).
-- **`middleware.ts` (raíz)**: refresca sesión; rutas protegidas (`/album`, `/onboarding`); redirige a `/login` si no hay usuario; si hay sesión evita `/login`, `/signup`, etc. y envía a `/album` u `/onboarding` según `onboardingCompleted`.
-- **Auth UI**: `(auth)/login`, `signup`, `forgot-password`, `reset-password`; `auth/callback`, `auth/confirm`; server actions en `app/actions/auth.ts` con Zod (`lib/validations/auth.ts`) y toasts con Sonner (`app/providers.tsx`).
-- **OAuth**: botones Google y Apple listos; activar proveedores en Supabase (ver abajo).
-- **Onboarding**: `(app)/onboarding` con formulario (username, país, ciudad, idiomas, edición, geo).
-- **`user_profiles`**: columnas `onboardingCompleted`, `geoOptIn`. Migración `lib/db/migrations/0001_bright_masque.sql` incluye trigger en `auth.users` que inserta perfil con `username` derivado del email (punto antes de `@`) y RLS básica. Aplicar con `pnpm db:push` o SQL en Supabase.
-- **Header**: `components/features/header.tsx` + `header-nav.tsx` (avatar, menú, logout).
-- **E2E**: Playwright `tests/e2e/auth.spec.ts`, script `pnpm test:e2e`; escenario signup+confirm por email documentado como skip (sin mock de correo). Variables opcionales en `.env.local.example`.
+- **`middleware.ts` (raíz)**: refresca sesión; rutas que exigen sesión (`/album`, `/onboarding`, `/discover`, `/messages`, `/marketplace`, `/profile` y subrutas); sin usuario → `/login`. Onboarding incompleto → redirección a `/onboarding` desde las secciones de la app (no desde la propia onboarding). Rutas de auth con sesión → `/album` u `/onboarding`.
+- **Shell autenticado** (`app/(app)/layout.tsx`): **Header** global, **sidebar** en desktop y **barra inferior** en mobile (`AppSidebar`, `AppBottomNav`), área principal `max-w-5xl` centrada. Navegación definida en `lib/navigation/app-nav.ts` (Lucide: BookOpen, Compass, MessageCircle, ShoppingBag, User).
+- **Tema**: `next-themes` en `app/providers.tsx` con `storageKey: stickr-theme`. **ThemeToggle** en el header.
+- **Páginas placeholder**: `/album` (Mi Álbum + CTA deshabilitado), `/discover`, `/messages`, `/marketplace` con `EmptyState`; `/profile` lee `user_profiles` del usuario; `/profile/edit` placeholder.
+- **UX**: `app/(app)/loading.tsx` (skeletons), `app/(app)/error.tsx`. Componente reutilizable `components/ui/empty-state.tsx`.
+- **Landing** (`app/page.tsx`): hero con CTAs Login / Signup; si hay sesión redirige a `/album` u `/onboarding`.
+- **Auth**: login/signup/OAuth/callback/confirm/onboarding y acciones en `app/actions/auth.ts` con Zod y Sonner.
+- **`user_profiles`**: trigger en `auth.users` (migración `lib/db/migrations/0001_*`) y RLS. `pnpm db:push` pendiente según tu entorno.
+- **Seed desarrollo**: `pnpm seed:test-users` — 5 usuarios con perfiles y `location_jittered` (CABA, CDMX, Bogotá, Madrid, São Paulo). Requiere `SUPABASE_SERVICE_ROLE_KEY` + `DATABASE_URL` + PostGIS.
+- **E2E**: Playwright `tests/e2e/auth.spec.ts`, `pnpm test:e2e`.
 
 ### OAuth en Supabase (Google y Apple)
 
