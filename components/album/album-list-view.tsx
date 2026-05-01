@@ -5,6 +5,7 @@ import { Star } from "lucide-react";
 
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
+import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -186,7 +187,7 @@ export function AlbumListView({
                     </td>
                     <td className="px-2 py-1.5 sm:px-3">
                       <div className="max-w-[8rem] truncate font-medium">
-                        {teamLabel(s.teamCode)}
+                        {fifaTeamFlagEmoji(s.teamCode)} {teamLabel(s.teamCode)}
                       </div>
                       <div className="text-muted-foreground text-xs">
                         {s.teamCode}

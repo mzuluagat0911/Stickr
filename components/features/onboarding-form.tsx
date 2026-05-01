@@ -5,10 +5,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { completeOnboardingAction } from "@/app/actions/auth";
-import {
-  ALBUM_EDITION_OPTIONS,
-  PROFILE_LANGUAGE_OPTIONS,
-} from "@/lib/constants/profile";
+import { ALBUM_EDITION_OPTIONS } from "@/lib/constants/profile";
 import {
   formatCityLabel,
   getCitiesOfCountrySorted,
@@ -32,7 +29,6 @@ import {
 } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -43,12 +39,12 @@ import {
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 
 type Props = {
-  defaultUsername: string;
+  defaultDisplayName: string;
   defaultAlbumEdition: string;
 };
 
 export function OnboardingForm({
-  defaultUsername,
+  defaultDisplayName,
   defaultAlbumEdition,
 }: Props) {
   const [countryCode, setCountryCode] = useState("CO");
@@ -64,17 +60,11 @@ export function OnboardingForm({
 
   const [city, setCity] = useState(defaultCityLabel);
   const [albumEdition, setAlbumEdition] = useState(defaultAlbumEdition);
-  const [languageCodes, setLanguageCodes] = useState<string[]>(["es"]);
   const [geoDetailsOpen, setGeoDetailsOpen] = useState(false);
-
-  const [tradeInPerson, setTradeInPerson] = useState(false);
-  const [tradeNationalShipping, setTradeNationalShipping] = useState(false);
-  const [tradeInternationalShipping, setTradeInternationalShipping] =
-    useState(false);
-  const [saleInPerson, setSaleInPerson] = useState(false);
-  const [saleNationalShipping, setSaleNationalShipping] = useState(false);
-  const [saleInternationalShipping, setSaleInternationalShipping] =
-    useState(false);
+  const [displayName, setDisplayName] = useState(defaultDisplayName);
+  const [tradeScope, setTradeScope] = useState<"local_only" | "national">(
+    "local_only",
+  );
   const [whatsappNational, setWhatsappNational] = useState("");
 
   const handleCountryChange = (code: string) => {
@@ -89,8 +79,6 @@ export function OnboardingForm({
     });
   };
 
-  const languagesCsv = languageCodes.join(",");
-
   const [state, formAction, pending] = useActionState(
     completeOnboardingAction,
     undefined as ActionResult | undefined,
@@ -101,23 +89,6 @@ export function OnboardingForm({
       toast.error(state.message);
     }
   }, [state]);
-
-  const toggleLang = (code: string) => {
-    setLanguageCodes((prev) => {
-      const set = new Set(prev);
-      if (set.has(code)) {
-        if (set.size <= 1) return prev;
-        set.delete(code);
-      } else {
-        set.add(code);
-      }
-      return [...set].sort(
-        (a, b) =>
-          PROFILE_LANGUAGE_OPTIONS.findIndex((o) => o.code === a) -
-          PROFILE_LANGUAGE_OPTIONS.findIndex((o) => o.code === b),
-      );
-    });
-  };
 
   return (
     <Card className="border-border/80 w-full max-w-lg shadow-lg shadow-black/5">
@@ -132,56 +103,31 @@ export function OnboardingForm({
       </CardHeader>
       <CardContent className="pt-4">
         <form action={formAction} className="flex flex-col gap-8">
-          <input type="hidden" name="languages" value={languagesCsv} />
-          <input
-            type="hidden"
-            name="tradeInPerson"
-            value={tradeInPerson ? "true" : "false"}
-          />
           <input
             type="hidden"
             name="tradeNationalShipping"
-            value={tradeNationalShipping ? "true" : "false"}
-          />
-          <input
-            type="hidden"
-            name="tradeInternationalShipping"
-            value={tradeInternationalShipping ? "true" : "false"}
-          />
-          <input
-            type="hidden"
-            name="saleInPerson"
-            value={saleInPerson ? "true" : "false"}
-          />
-          <input
-            type="hidden"
-            name="saleNationalShipping"
-            value={saleNationalShipping ? "true" : "false"}
-          />
-          <input
-            type="hidden"
-            name="saleInternationalShipping"
-            value={saleInternationalShipping ? "true" : "false"}
+            value={tradeScope === "national" ? "true" : "false"}
           />
 
           {/* Identidad */}
           <div className="space-y-4">
             <SectionEyebrow>Identidad</SectionEyebrow>
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-foreground">
-                Nombre de usuario
+              <Label htmlFor="displayName" className="text-foreground">
+                Nombre visible
               </Label>
               <Input
-                id="username"
-                name="username"
-                defaultValue={defaultUsername}
-                autoComplete="username"
-                placeholder="coleccionista_123"
+                id="displayName"
+                name="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                autoComplete="name"
+                placeholder="Ej. Mateo"
                 className="rounded-xl"
                 required
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Así te verán otros. Solo letras, números y guión bajo (3–32).
+                Así te verán otros coleccionistas.
               </p>
             </div>
           </div>
@@ -219,34 +165,9 @@ export function OnboardingForm({
             </p>
           </div>
 
-          {/* Preferencias */}
+          {/* Edición */}
           <div className="space-y-4">
-            <SectionEyebrow>Preferencias</SectionEyebrow>
-            <div className="space-y-2">
-              <Label>Idiomas</Label>
-              <div className="flex flex-wrap gap-2">
-                {PROFILE_LANGUAGE_OPTIONS.map((opt) => {
-                  const on = languageCodes.includes(opt.code);
-                  return (
-                    <Button
-                      key={opt.code}
-                      type="button"
-                      variant={on ? "default" : "outline"}
-                      size="sm"
-                      className="rounded-full px-4"
-                      onClick={() => toggleLang(opt.code)}
-                      disabled={pending}
-                    >
-                      {opt.label}
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Mantenemos al menos un idioma. Los puedes cambiar después en
-                perfil.
-              </p>
-            </div>
+            <SectionEyebrow>Álbum</SectionEyebrow>
             <div className="space-y-2">
               <Label htmlFor="albumEdition">Edición del álbum</Label>
               <Select
@@ -269,102 +190,47 @@ export function OnboardingForm({
             </div>
           </div>
 
-          {/* Intercambio y venta */}
+          {/* Preferencias de intercambio */}
           <div className="space-y-4">
-            <SectionEyebrow>Cómo planeas operar</SectionEyebrow>
+            <SectionEyebrow>Preferencia de intercambio</SectionEyebrow>
+            <div
+              role="radiogroup"
+              aria-label="Preferencia de intercambio"
+              className="bg-muted/70 border-border/60 grid grid-cols-2 gap-1 rounded-xl border p-1"
+            >
+              <Button
+                type="button"
+                role="radio"
+                aria-checked={tradeScope === "local_only"}
+                variant={tradeScope === "local_only" ? "secondary" : "ghost"}
+                className="h-auto min-h-[2.75rem] rounded-lg px-2 py-2.5 text-center text-xs leading-snug sm:text-sm"
+                onClick={() => setTradeScope("local_only")}
+                disabled={pending}
+              >
+                Solo local
+              </Button>
+              <Button
+                type="button"
+                role="radio"
+                aria-checked={tradeScope === "national"}
+                variant={tradeScope === "national" ? "secondary" : "ghost"}
+                className="h-auto min-h-[2.75rem] rounded-lg px-2 py-2.5 text-center text-xs leading-snug sm:text-sm"
+                onClick={() => setTradeScope("national")}
+                disabled={pending}
+              >
+                Local + envío nacional
+              </Button>
+            </div>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Preferencias solo informativas; lo concreto lo acuerdas con otros
-              fuera de la app.
+              Esta preferencia se usa para sugerencias de matches.
             </p>
-            <div className="space-y-2">
-              <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-                Intercambio
-              </p>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label
-                  htmlFor="ob-trade-ip"
-                  className="cursor-pointer text-sm leading-snug"
-                >
-                  Encuentro en persona (intercambio)
-                </Label>
-                <Switch
-                  id="ob-trade-ip"
-                  checked={tradeInPerson}
-                  onCheckedChange={setTradeInPerson}
-                  disabled={pending}
-                />
-              </div>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label htmlFor="ob-trade-ns" className="cursor-pointer text-sm">
-                  Envío nacional (intercambio)
-                </Label>
-                <Switch
-                  id="ob-trade-ns"
-                  checked={tradeNationalShipping}
-                  onCheckedChange={setTradeNationalShipping}
-                  disabled={pending}
-                />
-              </div>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label htmlFor="ob-trade-is" className="cursor-pointer text-sm">
-                  Envío internacional (intercambio)
-                </Label>
-                <Switch
-                  id="ob-trade-is"
-                  checked={tradeInternationalShipping}
-                  onCheckedChange={setTradeInternationalShipping}
-                  disabled={pending}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-                Venta
-              </p>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label
-                  htmlFor="ob-sale-ip"
-                  className="cursor-pointer text-sm leading-snug"
-                >
-                  Venta en persona
-                </Label>
-                <Switch
-                  id="ob-sale-ip"
-                  checked={saleInPerson}
-                  onCheckedChange={setSaleInPerson}
-                  disabled={pending}
-                />
-              </div>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label htmlFor="ob-sale-ns" className="cursor-pointer text-sm">
-                  Venta con envío nacional
-                </Label>
-                <Switch
-                  id="ob-sale-ns"
-                  checked={saleNationalShipping}
-                  onCheckedChange={setSaleNationalShipping}
-                  disabled={pending}
-                />
-              </div>
-              <div className="border-border/70 flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5">
-                <Label htmlFor="ob-sale-is" className="cursor-pointer text-sm">
-                  Venta con envío internacional
-                </Label>
-                <Switch
-                  id="ob-sale-is"
-                  checked={saleInternationalShipping}
-                  onCheckedChange={setSaleInternationalShipping}
-                  disabled={pending}
-                />
-              </div>
-            </div>
           </div>
 
           {/* WhatsApp */}
           <div className="space-y-4">
             <SectionEyebrow>WhatsApp</SectionEyebrow>
             <div className="space-y-2">
-              <Label htmlFor="whatsappNational">Número (opcional)</Label>
+              <Label htmlFor="whatsappNational">Número (obligatorio)</Label>
               <Input
                 id="whatsappNational"
                 name="whatsappNational"
@@ -374,11 +240,10 @@ export function OnboardingForm({
                 onChange={(e) => setWhatsappNational(e.target.value)}
                 className="rounded-xl"
                 disabled={pending}
+                required
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Se valida con el país declarado arriba. La visibilidad queda
-                como &quot;solo después de coordinar&quot; hasta que la ajustes
-                en perfil junto con Telegram o correo.
+                Se valida con formato internacional (E.164) usando tu país.
               </p>
             </div>
           </div>
@@ -430,7 +295,7 @@ export function OnboardingForm({
             type="submit"
             size="lg"
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-base shadow-md"
-            disabled={pending || !city}
+            disabled={pending || !city || !displayName.trim()}
           >
             {pending ? (
               <>
@@ -438,7 +303,7 @@ export function OnboardingForm({
                 Guardando…
               </>
             ) : (
-              "Continuar · paso siguiente"
+              "Continuar"
             )}
           </Button>
         </form>

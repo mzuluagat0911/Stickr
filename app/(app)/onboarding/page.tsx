@@ -20,7 +20,7 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from("user_profiles")
-    .select("username, album_edition, onboarding_completed")
+    .select("username, display_name, album_edition, onboarding_completed")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -48,7 +48,11 @@ export default async function OnboardingPage() {
       </div>
       <div className="flex flex-1 flex-col justify-center pb-10">
         <OnboardingForm
-          defaultUsername={(profile?.username as string) ?? ""}
+          defaultDisplayName={
+            (profile?.display_name as string) ??
+            (profile?.username as string) ??
+            ""
+          }
           defaultAlbumEdition={
             (profile?.album_edition as string) ?? "PR-International"
           }

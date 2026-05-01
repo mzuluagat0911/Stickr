@@ -44,7 +44,8 @@ export async function createMarketIntentAction(
     return fail("No pudimos obtener tu edición de álbum.");
   }
 
-  const edition = profile.album_edition as string;
+  const profileEdition = String(profile.album_edition ?? "").trim();
+  const edition = profileEdition || "PR-International";
 
   const { data: catRow, error: cErr } = await supabase
     .from("sticker_catalog")
@@ -56,17 +57,33 @@ export async function createMarketIntentAction(
   if (cErr) {
     return fail(cErr.message);
   }
-  if (!catRow?.id) {
-    return fail(
-      `El número ${raw.data.stickerNumber} no existe en catálogo ${edition}. Revisa el número en tu álbum.`,
-    );
+  let resolvedEdition = edition;
+  let resolvedCatalogId = catRow?.id as string | undefined;
+
+  if (!resolvedCatalogId && edition !== "PR-International") {
+    const { data: fallbackRow, error: fallbackErr } = await supabase
+      .from("sticker_catalog")
+      .select("id")
+      .eq("album_edition", "PR-International")
+      .eq("sticker_number", raw.data.stickerNumber)
+      .maybeSingle();
+    if (fallbackErr) return fail(fallbackErr.message);
+    if (fallbackRow?.id) {
+      resolvedEdition = "PR-International";
+      resolvedCatalogId = fallbackRow.id as string;
+    }
   }
 
-  const stickerId = catRow.id as string;
+  if (!resolvedCatalogId) {
+    return fail(
+      `El número ${raw.data.stickerNumber} no existe en catálogo ${edition}. Verifica tu edición en Perfil o usa un número válido.`,
+    );
+  }
+  const stickerId = resolvedCatalogId;
 
   const { error: insErr } = await supabase.from("market_intentions").insert({
     user_id: user.id,
-    album_edition: edition,
+    album_edition: resolvedEdition,
     sticker_number: raw.data.stickerNumber,
     sticker_id: stickerId,
     kind: raw.data.kind,
@@ -78,6 +95,16 @@ export async function createMarketIntentAction(
   });
 
   if (insErr) {
+    if (insErr.code === "42501") {
+      return fail(
+        "No tienes permisos para publicar aún. En Supabase revisa RLS/policies de market_intentions (insert/update/select para usuarios autenticados).",
+      );
+    }
+    if (insErr.code === "42P01") {
+      return fail(
+        "Falta la tabla market_intentions. Ejecuta la migración 0006_market_intentions en Supabase.",
+      );
+    }
     if (insErr.code === "23505") {
       return fail(
         "Ya tienes una publicación activa igual (misma figurita y tipo compra o venta). Cancélala antes desde el listado.",

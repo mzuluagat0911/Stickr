@@ -14,6 +14,38 @@ import {
 } from "@/lib/validations/auth";
 import type { ContactMethods } from "@/lib/types/profile";
 
+function toUsernameBase(input: string): string {
+  const normalized = input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (normalized.length >= 3) return normalized.slice(0, 32);
+  return `user_${Math.floor(Math.random() * 90000 + 10000)}`;
+}
+
+async function updateOrInsertOnboardingProfile(params: {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string;
+  profilePatch: Record<string, unknown>;
+}) {
+  const { supabase, userId, profilePatch } = params;
+  const { data: updatedRow, error } = await supabase
+    .from("user_profiles")
+    .update(profilePatch)
+    .eq("id", userId)
+    .select("id")
+    .maybeSingle();
+  if (error) return { updatedRow: null, error };
+  if (updatedRow) return { updatedRow, error: null };
+  const { error: insertError } = await supabase.from("user_profiles").insert({
+    id: userId,
+    ...profilePatch,
+  });
+  return { updatedRow: null, error: insertError ?? null };
+}
+
 export async function signInWithEmailAction(
   _prev: ActionResult | undefined,
   formData: FormData,
@@ -115,20 +147,14 @@ export async function completeOnboardingAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const raw = Object.fromEntries(formData.entries());
-  const languagesRaw = String(raw.languages ?? "");
   const parsed = onboardingSchema.safeParse({
+    displayName: raw.displayName,
     username: raw.username,
     countryCode: raw.countryCode,
     city: raw.city,
-    languages: languagesRaw,
     albumEdition: raw.albumEdition || "PR-International",
     geoOptIn: raw.geoOptIn === "on" || raw.geoOptIn === "true",
-    tradeInPerson: raw.tradeInPerson,
     tradeNationalShipping: raw.tradeNationalShipping,
-    tradeInternationalShipping: raw.tradeInternationalShipping,
-    saleInPerson: raw.saleInPerson,
-    saleNationalShipping: raw.saleNationalShipping,
-    saleInternationalShipping: raw.saleInternationalShipping,
     whatsappNational: raw.whatsappNational,
   });
 
@@ -147,64 +173,52 @@ export async function completeOnboardingAction(
   }
 
   const d = parsed.data;
+  const baseUsername = toUsernameBase(d.username || d.displayName);
+  let usernameCandidate = baseUsername;
   const tradePrefs = {
-    in_person: d.tradeInPerson,
+    in_person: true,
     national_shipping: d.tradeNationalShipping,
-    international_shipping: d.tradeInternationalShipping,
-    sale_in_person: d.saleInPerson,
-    sale_national_shipping: d.saleNationalShipping,
-    sale_international_shipping: d.saleInternationalShipping,
+    international_shipping: false,
+    sale_in_person: false,
+    sale_national_shipping: false,
+    sale_international_shipping: false,
   };
   const contactPatch: ContactMethods =
     (d.contactMethods as ContactMethods | undefined) ?? {};
-
-  const { data: updatedRow, error } = await supabase
-    .from("user_profiles")
-    .update({
-      username: d.username,
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (attempt > 0) {
+      usernameCandidate = `${baseUsername.slice(0, 27)}_${Math.floor(
+        Math.random() * 9000 + 1000,
+      )}`;
+    }
+    const profilePatch = {
+      username: usernameCandidate,
+      display_name: d.displayName.trim(),
       country_code: d.countryCode,
       city: d.city,
-      languages: d.languages,
+      languages: ["es"],
       album_edition: d.albumEdition,
       geo_opt_in: d.geoOptIn,
       trade_preferences: tradePrefs,
       contact_methods: contactPatch,
       onboarding_completed: true,
       last_active_at: new Date().toISOString(),
-    })
-    .eq("id", user.id)
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
+    };
+    const { error } = await updateOrInsertOnboardingProfile({
+      supabase,
+      userId: user.id,
+      profilePatch,
+    });
+    if (!error) break;
     if (error.code === "23505") {
-      return fail("Ese nombre de usuario ya está en uso.");
+      if (attempt === 2) {
+        return fail(
+          "No pudimos asignar un usuario único. Intenta de nuevo en unos segundos.",
+        );
+      }
+      continue;
     }
     return fail(error.message);
-  }
-
-  // Backfill de perfiles legacy: si no existe fila, la creamos.
-  if (!updatedRow) {
-    const { error: insertError } = await supabase.from("user_profiles").insert({
-      id: user.id,
-      username: d.username,
-      country_code: d.countryCode,
-      city: d.city,
-      languages: d.languages,
-      album_edition: d.albumEdition,
-      geo_opt_in: d.geoOptIn,
-      trade_preferences: tradePrefs,
-      contact_methods: contactPatch,
-      onboarding_completed: true,
-      last_active_at: new Date().toISOString(),
-    });
-
-    if (insertError) {
-      if (insertError.code === "23505") {
-        return fail("Ese nombre de usuario ya está en uso.");
-      }
-      return fail(insertError.message);
-    }
   }
 
   redirect("/onboarding/share-location");

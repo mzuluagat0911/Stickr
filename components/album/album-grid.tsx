@@ -41,6 +41,7 @@ import {
 } from "@/lib/album/query-keys";
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
+import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
 import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
 import { AlbumListView } from "@/components/album/album-list-view";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
@@ -130,7 +131,9 @@ function TeamCollapsible({
   return (
     <Collapsible defaultOpen className="rounded-lg border">
       <CollapsibleTrigger className="border-b px-3 py-2 text-sm">
-        <span className="font-medium">{team.name}</span>
+        <span className="font-medium">
+          {fifaTeamFlagEmoji(team.code)} {team.name}
+        </span>
         <span className="text-muted-foreground mr-2 text-xs">
           ({team.code})
         </span>

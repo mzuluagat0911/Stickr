@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { CircleArrowDown, CircleArrowUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -157,6 +157,8 @@ function IntentDialog({
             >
               <Button
                 type="button"
+                role="radio"
+                aria-checked={scope === "local_only"}
                 variant={scope === "local_only" ? "secondary" : "ghost"}
                 size="sm"
                 className={cn(
@@ -171,6 +173,8 @@ function IntentDialog({
               </Button>
               <Button
                 type="button"
+                role="radio"
+                aria-checked={scope === "national"}
                 variant={scope === "national" ? "secondary" : "ghost"}
                 size="sm"
                 className={cn(
@@ -235,7 +239,7 @@ function IntentDialog({
               <span className="tabular-nums">4200,50</span>.
             </p>
           </div>
-          <DialogFooter className="gap-2 pt-2 sm:flex-col sm:gap-3">
+          <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:gap-3">
             <Button
               type="submit"
               size="lg"
@@ -280,11 +284,6 @@ export function MarketplacePanel({
 }: Props) {
   const [cancelPendingId, setCancelPendingId] = useState<string | null>(null);
 
-  const sorted = useMemo(
-    () => [...intents].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [intents],
-  );
-
   const cancelIntent = (id: string) => {
     setCancelPendingId(id);
     void (async () => {
@@ -327,6 +326,10 @@ export function MarketplacePanel({
               suggestedCurrency={defaultCurrency}
             />
           </div>
+          <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
+            Tip mobile: usa números simples (ej. 15 o 120) y para decimales usa
+            coma (ej. 15,5).
+          </p>
         </div>
       </section>
 
@@ -348,7 +351,7 @@ export function MarketplacePanel({
           >
             {feedError}
           </p>
-        ) : sorted.length === 0 ? (
+        ) : intents.length === 0 ? (
           <Card className="border-border/80 bg-muted/15 rounded-2xl border-dashed shadow-none">
             <CardContent className="text-muted-foreground px-6 py-12 text-center text-sm leading-relaxed">
               Todavía no hay compras ni ventas publicadas. Sé el primero con los
@@ -356,8 +359,8 @@ export function MarketplacePanel({
             </CardContent>
           </Card>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:gap-5">
-            {sorted.map((row) => {
+          <ul className="grid gap-3 sm:grid-cols-2 lg:gap-5">
+            {intents.map((row) => {
               const mine = Boolean(
                 currentUserId && row.userId === currentUserId,
               );
@@ -370,24 +373,24 @@ export function MarketplacePanel({
                     )}
                   >
                     <CardHeader className="space-y-2 pb-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CardTitle className="font-heading text-base font-semibold tracking-tight">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <CardTitle className="font-heading min-w-0 text-sm font-semibold tracking-tight sm:text-base">
                           @{row.username}
                         </CardTitle>
                         <Badge
                           variant={row.kind === "buy" ? "secondary" : "default"}
-                          className="rounded-full capitalize"
+                          className="rounded-full px-2 py-0.5 text-[11px] capitalize sm:text-xs"
                         >
                           {row.kind === "buy" ? "Busca comprar" : "Vende"}
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="rounded-full font-mono text-xs"
+                          className="rounded-full px-2 py-0.5 font-mono text-[11px] sm:text-xs"
                         >
                           {row.currency}
                         </Badge>
                       </div>
-                      <CardDescription className="text-muted-foreground text-[0.8125rem] leading-snug">
+                      <CardDescription className="text-muted-foreground text-xs leading-snug sm:text-[0.8125rem]">
                         Figurita n.º{" "}
                         <span className="text-foreground font-medium tracking-tight tabular-nums">
                           {formatIntegerEs(row.stickerNumber)}
@@ -397,7 +400,7 @@ export function MarketplacePanel({
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2 pb-4">
-                      <p className="text-foreground text-xl font-semibold tracking-tight tabular-nums">
+                      <p className="text-foreground text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
                         {row.kind === "buy"
                           ? `Hasta ${formatMinorCurrency(row.priceCents, row.currency)}`
                           : formatMinorCurrency(row.priceCents, row.currency)}

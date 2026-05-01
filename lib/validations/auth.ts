@@ -46,43 +46,30 @@ function boolHiddenFalse(v: unknown): boolean {
 
 export const onboardingSchema = z
   .object({
+    displayName: z
+      .string()
+      .min(2, "Nombre visible obligatorio")
+      .max(50, "Máximo 50 caracteres"),
     username: z
       .string()
       .min(3, "Mínimo 3 caracteres")
       .max(32, "Máximo 32 caracteres")
-      .regex(/^[a-zA-Z0-9_]+$/, "Solo letras, números y guión bajo"),
+      .regex(/^[a-zA-Z0-9_]+$/, "Solo letras, números y guión bajo")
+      .optional(),
     countryCode: z
       .string()
       .length(2, "Código de país ISO 3166-1 alpha-2 (2 letras)")
       .transform((s) => s.toUpperCase()),
     city: z.string().min(1, "Ciudad obligatoria").max(120),
-    languages: z
-      .string()
-      .min(1)
-      .transform((s) =>
-        s
-          .split(",")
-          .map((x) => x.trim().toLowerCase())
-          .filter(Boolean),
-      )
-      .pipe(
-        z.array(z.string().min(2)).min(1, "Al menos un idioma (ej: es, en)"),
-      ),
     albumEdition: z.string().min(1, "Edición del álbum obligatoria"),
     geoOptIn: z.boolean().optional().default(false),
-    tradeInPerson: z.preprocess(boolHiddenFalse, z.boolean()),
     tradeNationalShipping: z.preprocess(boolHiddenFalse, z.boolean()),
-    tradeInternationalShipping: z.preprocess(boolHiddenFalse, z.boolean()),
-    saleInPerson: z.preprocess(boolHiddenFalse, z.boolean()),
-    saleNationalShipping: z.preprocess(boolHiddenFalse, z.boolean()),
-    saleInternationalShipping: z.preprocess(boolHiddenFalse, z.boolean()),
     whatsappNational: z.preprocess(
       (v) => (typeof v === "string" ? v.trim() : ""),
-      z.string(),
+      z.string().min(4, "WhatsApp obligatorio"),
     ),
   })
   .superRefine((data, ctx) => {
-    if (!data.whatsappNational) return;
     const p = parsePhoneNumberFromString(
       data.whatsappNational,
       data.countryCode as CountryCode,
@@ -97,27 +84,20 @@ export const onboardingSchema = z
     }
   })
   .transform((data) => {
-    let contactMethods:
-      | {
-          whatsapp?: { number: string; visibility: "post_trade" };
-          preferred?: "whatsapp";
-        }
-      | undefined;
-    if (data.whatsappNational) {
-      const p = parsePhoneNumberFromString(
-        data.whatsappNational,
-        data.countryCode as CountryCode,
-      );
-      if (p?.isValid()) {
-        contactMethods = {
-          whatsapp: {
-            number: p.format("E.164"),
-            visibility: "post_trade",
-          },
-          preferred: "whatsapp",
-        };
-      }
-    }
+    const p = parsePhoneNumberFromString(
+      data.whatsappNational,
+      data.countryCode as CountryCode,
+    );
+    const contactMethods =
+      p && p.isValid()
+        ? {
+            whatsapp: {
+              number: p.format("E.164"),
+              visibility: "post_trade" as const,
+            },
+            preferred: "whatsapp" as const,
+          }
+        : undefined;
     return { ...data, contactMethods };
   });
 
