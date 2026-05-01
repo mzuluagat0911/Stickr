@@ -26,6 +26,30 @@ const ONBOARDING_GATED_PREFIXES = [
   "/profile",
 ] as const;
 
+/**
+ * Origen para redirecciones: en producción en Vercel, si existe
+ * NEXT_PUBLIC_APP_URL, se usa como canonico (dominio custom). En preview y
+ * local se usa el host de la petición para no mandar tráfico de preview al dominio prod.
+ */
+function getRedirectOrigin(request: NextRequest): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (process.env.VERCEL_ENV === "production" && envUrl) {
+    try {
+      return new URL(envUrl).origin;
+    } catch {
+      /* seguir */
+    }
+  }
+  return request.nextUrl.origin;
+}
+
+function redirectTo(request: NextRequest, pathname: string, search?: string) {
+  const origin = getRedirectOrigin(request);
+  const url = new URL(pathname, origin);
+  if (search) url.search = search;
+  return NextResponse.redirect(url);
+}
+
 function matchesAnyPrefix(pathname: string, prefixes: readonly string[]) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
@@ -53,8 +77,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!user && requiresSession(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    const url = new URL("/login", getRedirectOrigin(request));
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
@@ -69,23 +92,15 @@ export async function middleware(request: NextRequest) {
     const onboardingDone = profile?.onboarding_completed === true;
 
     if (isAuthRoute(pathname)) {
-      const url = request.nextUrl.clone();
-      url.pathname = onboardingDone ? "/album" : "/onboarding";
-      url.search = "";
-      return NextResponse.redirect(url);
+      return redirectTo(request, onboardingDone ? "/album" : "/onboarding");
     }
 
     if (onboardingDone && pathname.startsWith("/onboarding")) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/album";
-      return NextResponse.redirect(url);
+      return redirectTo(request, "/album");
     }
 
     if (!onboardingDone && requiresOnboardingComplete(pathname)) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/onboarding";
-      url.search = "";
-      return NextResponse.redirect(url);
+      return redirectTo(request, "/onboarding");
     }
   }
 

@@ -22,7 +22,8 @@ export function OAuthProviderButton({
       disabled={disabled}
       onClick={async () => {
         const supabase = createClient();
-        const origin = window.location.origin;
+        const appBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+        const origin = appBase ?? window.location.origin;
         const { error } = await supabase.auth.signInWithOAuth({
           provider,
           options: {

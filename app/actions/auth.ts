@@ -5,14 +5,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types/result";
 import { fail, ok } from "@/lib/types/result";
+import { getPublicAppUrl } from "@/lib/env/public-app-url";
 import {
   forgotPasswordSchema,
   loginSchema,
   onboardingSchema,
   signupSchema,
 } from "@/lib/validations/auth";
-
-const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export async function signInWithEmailAction(
   _prev: ActionResult | undefined,
@@ -66,7 +65,7 @@ export async function signUpAction(
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      emailRedirectTo: `${appUrl()}/auth/callback`,
+      emailRedirectTo: `${getPublicAppUrl()}/auth/callback`,
       data: {
         display_name: parsed.data.name,
         full_name: parsed.data.name,
@@ -97,7 +96,7 @@ export async function requestPasswordResetAction(
   const { error } = await supabase.auth.resetPasswordForEmail(
     parsed.data.email,
     {
-      redirectTo: `${appUrl()}/auth/confirm?next=/reset-password`,
+      redirectTo: `${getPublicAppUrl()}/auth/confirm?next=/reset-password`,
     },
   );
 
