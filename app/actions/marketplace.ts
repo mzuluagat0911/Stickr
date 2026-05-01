@@ -7,6 +7,7 @@ import { formatMinorCurrency } from "@/lib/format-currency";
 import type { MarketFeedIntent } from "@/lib/marketplace/types";
 import type { ActionResult } from "@/lib/types/result";
 import { fail, ok } from "@/lib/types/result";
+import { ACTIVE_MARKET_INTENTION_STATUS } from "@/lib/marketplace/phase3-states";
 import { parseCreateMarketIntentWithCents } from "@/lib/validations/marketplace";
 
 export type { MarketFeedIntent };
@@ -90,7 +91,7 @@ export async function createMarketIntentAction(
     shipping_scope: raw.data.shippingScope,
     price_cents: raw.data.priceCents,
     currency: raw.data.currency,
-    status: "active",
+    status: ACTIVE_MARKET_INTENTION_STATUS,
     updated_at: new Date().toISOString(),
   });
 
@@ -154,7 +155,7 @@ export async function cancelMarketIntentAction(
     })
     .eq("id", id)
     .eq("user_id", user.id)
-    .eq("status", "active")
+    .eq("status", ACTIVE_MARKET_INTENTION_STATUS)
     .select("id");
 
   if (error) {

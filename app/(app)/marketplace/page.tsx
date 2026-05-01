@@ -1,20 +1,43 @@
 import { redirect } from "next/navigation";
 
+import { MarketplacePanelClient } from "@/components/features/marketplace-panel-client";
 import { ALBUM_EDITION_OPTIONS } from "@/lib/constants/profile";
-import { defaultMarketCurrency } from "@/lib/marketplace/currency";
+import {
+  defaultMarketCurrency,
+  type MarketCurrencyCode,
+} from "@/lib/marketplace/currency";
 import { getMarketFeed } from "@/lib/marketplace/feed";
 import type { MarketFeedIntent } from "@/lib/marketplace/types";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 
-import { MarketplacePanel } from "@/components/features/marketplace-panel";
+export const dynamic = "force-dynamic";
 
 export default async function MarketplacePage() {
   if (!hasPublicSupabaseConfig()) {
     redirect("/login");
   }
 
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Compra/venta
+        </h1>
+        <p
+          className="text-muted-foreground max-w-xl text-sm leading-relaxed"
+          role="alert"
+        >
+          No pudimos conectar con el servicio. Revisa las variables públicas de
+          Supabase en el despliegue y vuelve a intentar.
+        </p>
+      </div>
+    );
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -22,7 +45,7 @@ export default async function MarketplacePage() {
     redirect("/login");
   }
 
-  let defaultCurrency = defaultMarketCurrency(null);
+  let defaultCurrency: MarketCurrencyCode = defaultMarketCurrency(null);
   let editionLabel = "PR-International";
   let intents: MarketFeedIntent[] = [];
   let feedError: string | null = null;
@@ -43,7 +66,7 @@ export default async function MarketplacePage() {
     editionLabel =
       ALBUM_EDITION_OPTIONS.find((o) => o.value === edition)?.label ?? edition;
 
-    const feed = await getMarketFeed();
+    const feed = await getMarketFeed(supabase);
     if (feed.ok) {
       intents = feed.intents;
     } else {
@@ -69,7 +92,7 @@ export default async function MarketplacePage() {
           perfil.
         </p>
       </header>
-      <MarketplacePanel
+      <MarketplacePanelClient
         editionLabel={editionLabel}
         defaultCurrency={defaultCurrency}
         intents={intents}

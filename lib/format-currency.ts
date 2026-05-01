@@ -6,9 +6,13 @@ import {
 
 export function formatMinorCurrency(
   amountCents: number,
-  currencyCode = "ARS",
+  currencyCode: string | null | undefined = "ARS",
 ): string {
-  const normalized = currencyCode.trim().toUpperCase();
+  const raw =
+    typeof currencyCode === "string" && currencyCode.length > 0
+      ? currencyCode
+      : "ARS";
+  const normalized = raw.trim().toUpperCase();
   const code = (
     MARKET_CURRENCY_CODES.includes(normalized as MarketCurrencyCode)
       ? normalized
