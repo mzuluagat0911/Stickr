@@ -82,79 +82,82 @@ function getPublicSupabaseKey(): string | undefined {
 }
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
-  const url = getPublicSupabaseUrl();
-  const key = getPublicSupabaseKey();
+  try {
+    let response = NextResponse.next({ request });
+    const url = getPublicSupabaseUrl();
+    const key = getPublicSupabaseKey();
 
-  if (!url || !key) {
-    console.error("[middleware] Faltan variables públicas de Supabase.");
-    return response;
-  }
-
-  const supabase = createServerClient(url, key, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => {
-          request.cookies.set(name, value);
-        });
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => {
-          response.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
-
-  const {
-    data: { session },
-    error: sessionErr,
-  } = await supabase.auth.getSession();
-  if (sessionErr) {
-    console.warn("[middleware] getSession:", sessionErr.message);
-  }
-  const user = session?.user ?? null;
-
-  const { pathname } = request.nextUrl;
-
-  if (pathname.startsWith("/auth/")) {
-    return response;
-  }
-
-  if (!user && requiresSession(pathname)) {
-    const url = new URL("/login", getRedirectOrigin(request));
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    const onboardingDone = profile?.onboarding_completed === true;
-
-    if (isAuthRoute(pathname)) {
-      return redirectTo(request, onboardingDone ? "/album" : "/onboarding");
+    if (!url || !key) {
+      console.error("[middleware] Faltan variables públicas de Supabase.");
+      return response;
     }
 
-    if (onboardingDone && pathname.startsWith("/onboarding")) {
-      if (pathname === "/onboarding/share-location") {
-        return response;
+    const supabase = createServerClient(url, key, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    });
+
+    const {
+      data: { session },
+      error: sessionErr,
+    } = await supabase.auth.getSession();
+    if (sessionErr) {
+      console.warn("[middleware] getSession:", sessionErr.message);
+    }
+    const user = session?.user ?? null;
+
+    const { pathname } = request.nextUrl;
+
+    if (pathname.startsWith("/auth/")) {
+      return response;
+    }
+
+    if (!user && requiresSession(pathname)) {
+      const loginUrl = new URL("/login", getRedirectOrigin(request));
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("onboarding_completed")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const onboardingDone = profile?.onboarding_completed === true;
+
+      if (isAuthRoute(pathname)) {
+        return redirectTo(request, onboardingDone ? "/album" : "/onboarding");
       }
-      return redirectTo(request, "/album");
+
+      if (onboardingDone && pathname.startsWith("/onboarding")) {
+        if (pathname === "/onboarding/share-location") {
+          return response;
+        }
+        return redirectTo(request, "/album");
+      }
+
+      if (!onboardingDone && requiresOnboardingComplete(pathname)) {
+        return redirectTo(request, "/onboarding");
+      }
     }
 
-    if (!onboardingDone && requiresOnboardingComplete(pathname)) {
-      return redirectTo(request, "/onboarding");
-    }
+    return response;
+  } catch (error) {
+    console.error("[middleware] invocation failed:", error);
+    // Fail-open para evitar 500 global en caso de error edge.
+    return NextResponse.next({ request });
   }
-
-  return response;
 }
 
 export const config = {
