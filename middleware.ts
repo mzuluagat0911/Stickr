@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-import { updateSession } from "@/lib/supabase/middleware";
+import {
+  getPublicSupabaseKey,
+  getPublicSupabaseUrl,
+} from "@/lib/supabase/public-env";
 
 const AUTH_ROUTES_PREFIX = [
   "/login",
@@ -72,7 +76,40 @@ function requiresOnboardingComplete(pathname: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { response, user, supabase } = await updateSession(request);
+  let response = NextResponse.next({ request });
+  const url = getPublicSupabaseUrl();
+  const key = getPublicSupabaseKey();
+
+  if (!url || !key) {
+    console.error("[middleware] Faltan variables públicas de Supabase.");
+    return response;
+  }
+
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => {
+          request.cookies.set(name, value);
+        });
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
+
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
+  if (userErr) {
+    console.warn("[middleware] getUser:", userErr.message);
+  }
+
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/auth/")) {
@@ -85,7 +122,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && supabase) {
+  if (user) {
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("onboarding_completed")
