@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { ConversationMarketOffers } from "@/components/features/conversation-market-offers";
 import {
   conversationMarketLabel,
   type MarketIntentEmbed,
 } from "@/lib/messages/conversation-label";
+import { defaultMarketCurrency } from "@/lib/marketplace/currency";
+import type { MarketOfferRow } from "@/lib/marketplace/offer-types";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { conversationIdSchema } from "@/lib/validations/messages";
@@ -73,6 +76,14 @@ export default async function ConversationPage({
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("country_code")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
+
   const { data: conv, error: cErr } = await supabase
     .from("conversations")
     .select(
@@ -115,6 +126,21 @@ export default async function ConversationPage({
     "Conversación";
   const peer = row.user_a === user.id ? row.user_b : row.user_a;
 
+  let initialOffers: MarketOfferRow[] = [];
+  if (row.market_intention_id) {
+    const { data: offRows, error: offErr } = await supabase
+      .from("market_offers")
+      .select(
+        "id,from_user_id,to_user_id,price_cents,currency,status,created_at,parent_offer_id,responded_at",
+      )
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (!offErr && Array.isArray(offRows)) {
+      initialOffers = offRows as MarketOfferRow[];
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -131,6 +157,15 @@ export default async function ConversationPage({
           </p>
         </div>
       </div>
+
+      {row.market_intention_id ? (
+        <ConversationMarketOffers
+          conversationId={conversationId}
+          currentUserId={user.id}
+          initialOffers={initialOffers}
+          defaultCurrency={defaultCurrency}
+        />
+      ) : null}
 
       <div className="bg-muted/25 border-border/50 flex max-h-[min(55vh,28rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4">
         {messages.length === 0 ? (

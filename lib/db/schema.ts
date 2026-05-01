@@ -353,6 +353,54 @@ export const marketIntentions = pgTable(
   ],
 );
 
+/** Ofertas de precio en hilos de marketplace (Fase 3.2); FK `parent_offer_id` en migración SQL. */
+export const marketOffers = pgTable(
+  "market_offers",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    marketIntentionId: uuid("market_intention_id")
+      .notNull()
+      .references(() => marketIntentions.id, { onDelete: "restrict" }),
+    fromUserId: uuid("from_user_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    toUserId: uuid("to_user_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    priceCents: integer("price_cents").notNull(),
+    currency: text("currency").notNull(),
+    status: text("status").notNull().default("pending"),
+    parentOfferId: uuid("parent_offer_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+  },
+  (t) => [
+    check(
+      "market_offers_status_check",
+      sql.raw(`"status" IN ('pending', 'accepted', 'rejected', 'superseded')`),
+    ),
+    check(
+      "market_offers_currency_check",
+      sql.raw(`"currency" IN ('ARS', 'USD', 'COP', 'EUR')`),
+    ),
+    check(
+      "market_offers_price_check",
+      sql.raw(`"price_cents" >= 50 AND "price_cents" <= 100000000`),
+    ),
+    check(
+      "market_offers_from_ne_to",
+      sql.raw(`"from_user_id" <> "to_user_id"`),
+    ),
+    index("market_offers_conversation_created_idx").on(
+      t.conversationId,
+      t.createdAt,
+    ),
+  ],
+);
+
 export const orders = pgTable(
   "orders",
   {

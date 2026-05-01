@@ -27,3 +27,13 @@ export const TRADE_STATUS = [
 ] as const;
 
 export type TradeStatus = (typeof TRADE_STATUS)[number];
+
+/** Filas en `market_offers.status` (migración 0011). */
+export const MARKET_OFFER_STATUS = [
+  "pending",
+  "accepted",
+  "rejected",
+  "superseded",
+] as const;
+
+export type MarketOfferStatus = (typeof MARKET_OFFER_STATUS)[number];
