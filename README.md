@@ -85,5 +85,7 @@ La plataforma está pensada para escalar por fases, desde cimientos técnicos s�
 
 ## Estado actual
 
-- Documento base del producto creado con visión, stack, estructura, convenciones, datos del álbum, comandos, variables de entorno y roadmap por fases.
-- Pendiente: inicializar proyecto Next.js, crear estructura de carpetas definida y configurar toolchain (sin instalaciones aún).
+- Proyecto inicializado con Next.js (App Router) + TypeScript + Tailwind + ESLint + alias `@/`.
+- Dependencias de producto y desarrollo instaladas (Drizzle, Supabase, Zod, React Hook Form, Vitest, Playwright, Prettier, Husky, lint-staged).
+- `shadcn/ui` inicializado (CLI actual) con componentes base: button, input, label, card, dialog, dropdown-menu, avatar, badge, sonner, form, separator, skeleton y tabs.
+- Estructura de carpetas creada con `.gitkeep` en `/lib/*`, `/components/features`, `/scripts`, `/tests/unit` y `/tests/e2e`.

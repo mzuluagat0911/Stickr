@@ -8,6 +8,13 @@
       "when": 1777606588366,
       "tag": "0000_lazy_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777606900742,
+      "tag": "0001_bright_masque",
+      "breakpoints": true
     }
   ]
 }

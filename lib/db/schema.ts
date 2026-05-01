@@ -94,6 +94,10 @@ export const userProfiles = pgTable(
     tradesCompleted: integer("trades_completed").notNull().default(0),
     isVerified: boolean("is_verified").notNull().default(false),
     isBlocked: boolean("is_blocked").notNull().default(false),
+    onboardingCompleted: boolean("onboarding_completed")
+      .notNull()
+      .default(false),
+    geoOptIn: boolean("geo_opt_in").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
