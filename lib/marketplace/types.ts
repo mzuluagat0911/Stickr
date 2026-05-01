@@ -7,7 +7,7 @@ export type MarketFeedIntent = {
   priceCents: number;
   currency: string;
   albumEdition: string;
-  createdAt: string;
+  createdAt: string | null;
   userId: string;
-  username: string;
+  username: string | null;
 };

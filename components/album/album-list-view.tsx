@@ -108,7 +108,7 @@ export function AlbumListView({
               <th className="px-2 py-2 font-medium sm:px-3">Figurita</th>
               <th className="px-2 py-2 font-medium sm:px-3">Estado</th>
               <th className="hidden px-2 py-2 font-medium sm:px-3 md:table-cell">
-                Int.
+                Interc.
               </th>
               <th className="px-2 py-2 text-right font-medium sm:px-3">
                 Acciones
@@ -180,10 +180,6 @@ export function AlbumListView({
                   >
                     <td className="px-2 py-1.5 tabular-nums sm:px-3">
                       <span className="font-semibold">{s.stickerNumber}</span>
-                      <span className="text-muted-foreground mx-1">·</span>
-                      <span className="text-muted-foreground text-xs">
-                        {s.id}
-                      </span>
                     </td>
                     <td className="px-2 py-1.5 sm:px-3">
                       <div className="max-w-[8rem] truncate font-medium">

@@ -54,6 +54,16 @@ function scopeLabel(scope: MarketFeedIntent["shippingScope"]) {
   return scope === "national" ? "Envío nacional" : "Solo local";
 }
 
+function formatPublishedAt(iso: string | null): string {
+  if (!iso) return "hace un momento";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "hace un momento";
+  return new Intl.DateTimeFormat(APP_NUMBER_LOCALE, {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
 type IntentDialogProps = {
   kind: "buy" | "sell";
   editionLabel: string;
@@ -375,7 +385,7 @@ export function MarketplacePanel({
                     <CardHeader className="space-y-2 pb-2">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <CardTitle className="font-heading min-w-0 text-sm font-semibold tracking-tight sm:text-base">
-                          @{row.username}
+                          @{row.username?.trim() || "coleccionista"}
                         </CardTitle>
                         <Badge
                           variant={row.kind === "buy" ? "secondary" : "default"}
@@ -406,11 +416,7 @@ export function MarketplacePanel({
                           : formatMinorCurrency(row.priceCents, row.currency)}
                       </p>
                       <p className="text-muted-foreground text-xs tabular-nums">
-                        Publicado{" "}
-                        {new Intl.DateTimeFormat(APP_NUMBER_LOCALE, {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        }).format(new Date(row.createdAt))}
+                        Publicado {formatPublishedAt(row.createdAt)}
                       </p>
                     </CardContent>
                     {mine ? (

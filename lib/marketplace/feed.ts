@@ -47,7 +47,7 @@ export async function getMarketFeed(): Promise<
     price_cents: number;
     currency: string;
     album_edition: string;
-    created_at: string;
+    created_at: string | null;
     user_id: string;
   };
 
@@ -67,7 +67,7 @@ export async function getMarketFeed(): Promise<
   }
 
   const usernameById = new Map(
-    ((names ?? []) as { id: string; username: string }[]).map((u) => [
+    ((names ?? []) as { id: string; username: string | null }[]).map((u) => [
       u.id,
       u.username,
     ]),
@@ -75,8 +75,7 @@ export async function getMarketFeed(): Promise<
 
   const intents: MarketFeedIntent[] = [];
   for (const r of list) {
-    const uname = usernameById.get(r.user_id);
-    if (!uname) continue;
+    const uname = usernameById.get(r.user_id) ?? null;
     const kind = r.kind === "sell" ? "sell" : "buy";
     const shippingScope =
       r.shipping_scope === "national" ? "national" : "local_only";

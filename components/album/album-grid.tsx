@@ -10,12 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ChevronDown,
-  Keyboard,
-  LayoutGridIcon,
-  ListChecks,
-} from "lucide-react";
+import { LayoutGridIcon, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -73,6 +68,13 @@ const CONF_TAB_ORDER: Confederation[] = [
   "OFC",
   "UEFA",
 ];
+
+function normalizeSearchText(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 type Mut =
   | { op: "have"; stickerId: string }
@@ -139,7 +141,7 @@ function TeamCollapsible({
         </span>
       </CollapsibleTrigger>
       <CollapsibleContent className="p-2 sm:p-3">
-        <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
           {stickers.map((s) => (
             <Fragment key={s.id}>{renderCell(s)}</Fragment>
           ))}
@@ -205,6 +207,9 @@ export function AlbumGrid({
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "missing" | "have" | "duplicate"
+  >("all");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -294,21 +299,34 @@ export function AlbumGrid({
   };
 
   const filteredCatalog = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return catalog;
-    return catalog.filter((s) => {
-      const id = s.id.toLowerCase();
-      const num = String(s.stickerNumber);
-      const team = s.teamCode.toLowerCase();
-      const player = (s.playerName ?? "").toLowerCase();
-      return (
-        id.includes(q) ||
-        num.includes(q) ||
-        team.includes(q) ||
-        player.includes(q)
-      );
+    const q = normalizeSearchText(searchQuery.trim());
+    const bySearch = !q
+      ? catalog
+      : catalog.filter((s) => {
+          const id = normalizeSearchText(s.id);
+          const num = String(s.stickerNumber);
+          const team = normalizeSearchText(s.teamCode);
+          const teamName =
+            normalizeSearchText(
+              TEAMS_2026.find((t) => t.code === s.teamCode)?.name ?? "",
+            ) || "";
+          const player = normalizeSearchText(s.playerName ?? "");
+          return (
+            id.includes(q) ||
+            num.includes(q) ||
+            team.includes(q) ||
+            teamName.includes(q) ||
+            player.includes(q)
+          );
+        });
+    if (statusFilter === "all") return bySearch;
+    return bySearch.filter((s) => {
+      const entry = userMap?.[s.id];
+      if (statusFilter === "missing") return !entry;
+      if (statusFilter === "have") return entry?.status === "have";
+      return entry?.status === "duplicate";
     });
-  }, [catalog, searchQuery]);
+  }, [catalog, searchQuery, statusFilter, userMap]);
 
   const hasSearch = searchQuery.trim().length > 0;
 
@@ -489,29 +507,6 @@ export function AlbumGrid({
             abajo.
           </p>
         </div>
-        <Collapsible className="max-w-xl">
-          <CollapsibleTrigger className="group inline-flex w-auto rounded-full border px-3 py-1.5">
-            <Keyboard className="size-4" aria-hidden />
-            Atajos de teclado
-            <ChevronDown className="text-muted-foreground size-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="border-border/70 text-muted-foreground mt-2 rounded-xl border px-4 py-3 text-sm leading-relaxed">
-            <ul className="list-inside list-disc space-y-1">
-              <li>
-                Tab / Shift+Tab para moverte entre figuritas dentro de esta
-                pestaña.
-              </li>
-              <li>
-                Espacio cicla estado hacia delante (falta → tengo → repetida);
-                Shift+Espacio, al revés.
-              </li>
-              <li>
-                Cuando está en repetida, las teclas 1–9 fijan cantidad ×2–×10.
-              </li>
-            </ul>
-          </CollapsibleContent>
-        </Collapsible>
-
         <div className="max-w-lg space-y-3">
           <Input
             type="search"
@@ -547,6 +542,32 @@ export function AlbumGrid({
                 Lista
               </Button>
             </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground text-xs font-medium">
+              Estado
+            </span>
+            {[
+              ["all", "Todas"],
+              ["missing", "Faltantes"],
+              ["have", "Tengo"],
+              ["duplicate", "Repetidas"],
+            ].map(([value, label]) => (
+              <Button
+                key={value}
+                type="button"
+                size="sm"
+                variant={statusFilter === value ? "secondary" : "outline"}
+                className="h-7 rounded-full px-3 text-xs"
+                onClick={() =>
+                  setStatusFilter(
+                    value as "all" | "missing" | "have" | "duplicate",
+                  )
+                }
+              >
+                {label}
+              </Button>
+            ))}
           </div>
         </div>
       </div>
@@ -654,13 +675,13 @@ export function AlbumGrid({
                 value="tournament"
                 className="shrink-0 px-3 text-xs sm:text-sm"
               >
-                Tournament
+                Torneo
               </TabsTrigger>
               <TabsTrigger
                 value="specials"
                 className="shrink-0 px-3 text-xs sm:text-sm"
               >
-                Specials
+                Especiales
               </TabsTrigger>
               {CONF_TAB_ORDER.map((c) => (
                 <TabsTrigger
@@ -684,7 +705,7 @@ export function AlbumGrid({
                 .
               </p>
             ) : (
-              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
                 {tournament.map((s) => renderSticker(s))}
               </div>
             )}
@@ -697,7 +718,7 @@ export function AlbumGrid({
                 {hasSearch ? "con ese filtro" : "."}
               </p>
             ) : (
-              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
                 {specials.map((s) => renderSticker(s))}
               </div>
             )}
