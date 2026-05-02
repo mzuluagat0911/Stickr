@@ -42,7 +42,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,224 +68,255 @@ function formatPublishedAt(iso: string | null): string {
   }
 }
 
-type IntentDialogProps = {
-  kind: "buy" | "sell";
-  editionLabel: string;
-  suggestedCurrency: MarketCurrencyCode;
-};
+type OfferKind = "buy" | "sell";
 
-function IntentDialog({
-  kind,
+/** Un solo Dialog controlado: dos raíces Radix Dialog en la misma vista suelen romper el montaje en móvil/prod. */
+function NewPublicationDialogs({
   editionLabel,
   suggestedCurrency,
-}: IntentDialogProps) {
+}: {
+  editionLabel: string;
+  suggestedCurrency: MarketCurrencyCode;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<OfferKind | null>(null);
   const [scope, setScope] = useState<"local_only" | "national">("local_only");
-  const initialCurrency: MarketCurrencyCode = isMarketCurrency(
-    suggestedCurrency,
-  )
+  const safeSuggested: MarketCurrencyCode = isMarketCurrency(suggestedCurrency)
     ? suggestedCurrency
     : "USD";
-  const [currency, setCurrency] = useState<MarketCurrencyCode>(initialCurrency);
+  const [currency, setCurrency] = useState<MarketCurrencyCode>(safeSuggested);
   const [pending, startTransition] = useTransition();
 
-  const title = kind === "buy" ? "Quiero comprar" : "Quiero vender";
+  const openAs = (next: OfferKind) => {
+    setScope("local_only");
+    setCurrency(safeSuggested);
+    setActive(next);
+  };
+
+  const kind = active;
+  const title =
+    kind === "buy" ? "Quiero comprar" : kind === "sell" ? "Quiero vender" : "";
   const desc =
     kind === "buy"
       ? `Indica el número de la figurita de tu lista ${editionLabel}; si solo quieres entrega cara a cara o también con envío nacional, y el máximo que pagarías.`
-      : `Indica el número de la figurita de tu lista ${editionLabel}, el alcance (local frente a nacional) y el precio al que vendes.`;
+      : kind === "sell"
+        ? `Indica el número de la figurita de tu lista ${editionLabel}, el alcance (local frente a nacional) y el precio al que vendes.`
+        : "";
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
         <Button
           type="button"
-          variant={kind === "buy" ? "default" : "outline"}
+          variant="default"
           size="lg"
           className={cn(
             "inline-flex min-h-12 w-full gap-2.5 rounded-2xl px-5 py-3 text-[0.9375rem] font-semibold tracking-tight shadow-sm sm:min-h-11 sm:flex-1 sm:px-6",
-            kind === "buy" && "shadow-primary/25 hover:bg-primary/90 shadow-md",
-            kind === "sell" &&
-              "border-muted-foreground/20 bg-background hover:bg-muted/40 border-2",
+            "shadow-primary/25 hover:bg-primary/90 shadow-md",
           )}
+          onClick={() => openAs("buy")}
         >
-          {kind === "buy" ? (
-            <CircleArrowDown className="size-5 shrink-0" aria-hidden />
-          ) : (
-            <CircleArrowUp className="size-5 shrink-0" aria-hidden />
-          )}
-          {kind === "buy" ? "Comprar" : "Vender"}
+          <CircleArrowDown className="size-5 shrink-0" aria-hidden />
+          Comprar
         </Button>
-      </DialogTrigger>
-      <DialogContent showCloseButton className="gap-6 sm:max-w-lg">
-        <DialogHeader className="space-y-2 text-left">
-          <DialogTitle className="font-heading text-xl leading-tight font-semibold tracking-tight md:text-[1.35rem]">
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-[0.8125rem] leading-relaxed sm:text-sm">
-            {desc}
-          </DialogDescription>
-        </DialogHeader>
-        <form
-          className="grid gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            formData.set("kind", kind);
-            formData.set("shippingScope", scope);
-            formData.set("currency", currency);
-            startTransition(async () => {
-              const res = await createMarketIntentAction(formData);
-              if (res.ok && res.data?.summary) {
-                toast.success(res.data.summary);
-                setOpen(false);
-                router.refresh();
-              } else if (!res.ok) {
-                toast.error(res.message);
-              }
-            });
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className={cn(
+            "inline-flex min-h-12 w-full gap-2.5 rounded-2xl px-5 py-3 text-[0.9375rem] font-semibold tracking-tight shadow-sm sm:min-h-11 sm:flex-1 sm:px-6",
+            "border-muted-foreground/20 bg-background hover:bg-muted/40 border-2",
+          )}
+          onClick={() => openAs("sell")}
+        >
+          <CircleArrowUp className="size-5 shrink-0" aria-hidden />
+          Vender
+        </Button>
+      </div>
+
+      {active !== null ? (
+        <Dialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setActive(null);
           }}
         >
-          <div className="space-y-2">
-            <Label htmlFor={`stk-${kind}`}>Número de figurita</Label>
-            <Input
-              id={`stk-${kind}`}
-              name="stickerNumber"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={99999}
-              required
-              placeholder="Ej. 12"
-              className="rounded-xl"
-              disabled={pending}
-            />
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Es el mismo número que ves en el álbum dentro de tu edición (
-              {editionLabel}).
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-foreground font-medium">
-              Alcance del intercambio
-            </Label>
-            <div
-              role="radiogroup"
-              aria-label="Alcance"
-              className="bg-muted/70 border-border/60 grid grid-cols-2 gap-1 rounded-xl border p-1"
-            >
-              <Button
-                type="button"
-                role="radio"
-                aria-checked={scope === "local_only"}
-                variant={scope === "local_only" ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  "hover:bg-muted/80 relative h-auto min-h-[2.75rem] shrink-0 rounded-lg px-2 py-2.5 text-center text-[0.8125rem] leading-snug font-medium shadow-none",
-                  scope === "local_only" &&
-                    "bg-background ring-border/80 shadow-sm ring-1",
-                )}
-                onClick={() => setScope("local_only")}
-                disabled={pending}
-              >
-                Solo encuentro local
-              </Button>
-              <Button
-                type="button"
-                role="radio"
-                aria-checked={scope === "national"}
-                variant={scope === "national" ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  "hover:bg-muted/80 relative h-auto min-h-[2.75rem] shrink-0 rounded-lg px-2 py-2.5 text-center text-[0.8125rem] leading-snug font-medium shadow-none",
-                  scope === "national" &&
-                    "bg-background ring-border/80 shadow-sm ring-1",
-                )}
-                onClick={() => setScope("national")}
-                disabled={pending}
-              >
-                Incluye envío nacional
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {scopeHelp}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`cur-${kind}`}>Moneda</Label>
-            <select
-              id={`cur-${kind}`}
-              value={currency}
-              disabled={pending}
-              onChange={(e) => {
-                const v = e.target.value;
-                setCurrency(isMarketCurrency(v) ? v : "USD");
+          <DialogContent
+            key={active}
+            showCloseButton
+            className="gap-6 sm:max-w-lg"
+          >
+            <DialogHeader className="space-y-2 text-left">
+              <DialogTitle className="font-heading text-xl leading-tight font-semibold tracking-tight md:text-[1.35rem]">
+                {title}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-[0.8125rem] leading-relaxed sm:text-sm">
+                {desc}
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (active === null) return;
+                const formData = new FormData(e.currentTarget);
+                formData.set("kind", active);
+                formData.set("shippingScope", scope);
+                formData.set("currency", currency);
+                startTransition(async () => {
+                  const res = await createMarketIntentAction(formData);
+                  if (res.ok && res.data?.summary) {
+                    toast.success(res.data.summary);
+                    setActive(null);
+                    router.refresh();
+                  } else if (!res.ok) {
+                    toast.error(res.message);
+                  }
+                });
               }}
-              className={cn(
-                "border-input bg-background text-foreground focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm shadow-sm outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
-              )}
             >
-              {MARKET_CURRENCY_CODES.map((code) => (
-                <option key={code} value={code}>
-                  {`${MARKET_CURRENCY_UI[code].label} · ${MARKET_CURRENCY_UI[code].hint}`}
-                </option>
-              ))}
-            </select>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Valor sugerido según el país en tu perfil; puedes elegir
-              cualquiera de estas cuatro monedas.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`price-${kind}`}>
-              {kind === "buy"
-                ? `Precio máximo a pagar (${currency})`
-                : `Precio de venta (${currency})`}
-            </Label>
-            <Input
-              id={`price-${kind}`}
-              name="priceMajor"
-              inputMode="decimal"
-              placeholder="Ej. 15.000 o 2500"
-              autoComplete="off"
-              required
-              className="rounded-xl font-medium tabular-nums"
-              disabled={pending}
-            />
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Puedes escribir con puntos de miles (ej.{" "}
-              <span className="tabular-nums">15.000</span>). Decimales con coma
-              ( ej. <span className="tabular-nums">15.000,50</span>). Sin puntos
-              de miles: <span className="tabular-nums">4200</span> o{" "}
-              <span className="tabular-nums">4200,50</span>.
-            </p>
-          </div>
-          <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full rounded-2xl font-semibold tracking-tight sm:w-auto"
-              disabled={pending}
-            >
-              {pending ? (
-                <>
-                  <Loader2
-                    className="size-4 shrink-0 animate-spin"
-                    aria-hidden
-                  />
-                  Publicando…
-                </>
-              ) : kind === "buy" ? (
-                "Publicar búsqueda"
-              ) : (
-                "Publicar venta"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor={`stk-${kind}`}>Número de figurita</Label>
+                <Input
+                  id={`stk-${kind}`}
+                  name="stickerNumber"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={99999}
+                  required
+                  placeholder="Ej. 12"
+                  className="rounded-xl"
+                  disabled={pending}
+                />
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Es el mismo número que ves en el álbum dentro de tu edición (
+                  {editionLabel}).
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">
+                  Alcance del intercambio
+                </Label>
+                <div
+                  role="radiogroup"
+                  aria-label="Alcance"
+                  className="bg-muted/70 border-border/60 grid grid-cols-2 gap-1 rounded-xl border p-1"
+                >
+                  <Button
+                    type="button"
+                    role="radio"
+                    aria-checked={scope === "local_only"}
+                    variant={scope === "local_only" ? "secondary" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "hover:bg-muted/80 relative h-auto min-h-[2.75rem] shrink-0 rounded-lg px-2 py-2.5 text-center text-[0.8125rem] leading-snug font-medium shadow-none",
+                      scope === "local_only" &&
+                        "bg-background ring-border/80 shadow-sm ring-1",
+                    )}
+                    onClick={() => setScope("local_only")}
+                    disabled={pending}
+                  >
+                    Solo encuentro local
+                  </Button>
+                  <Button
+                    type="button"
+                    role="radio"
+                    aria-checked={scope === "national"}
+                    variant={scope === "national" ? "secondary" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "hover:bg-muted/80 relative h-auto min-h-[2.75rem] shrink-0 rounded-lg px-2 py-2.5 text-center text-[0.8125rem] leading-snug font-medium shadow-none",
+                      scope === "national" &&
+                        "bg-background ring-border/80 shadow-sm ring-1",
+                    )}
+                    onClick={() => setScope("national")}
+                    disabled={pending}
+                  >
+                    Incluye envío nacional
+                  </Button>
+                </div>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  {scopeHelp}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`cur-${kind}`}>Moneda</Label>
+                <select
+                  id={`cur-${kind}`}
+                  value={currency}
+                  disabled={pending}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCurrency(isMarketCurrency(v) ? v : "USD");
+                  }}
+                  className={cn(
+                    "border-input bg-background text-foreground focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm shadow-sm outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  {MARKET_CURRENCY_CODES.map((code) => (
+                    <option key={code} value={code}>
+                      {`${MARKET_CURRENCY_UI[code].label} · ${MARKET_CURRENCY_UI[code].hint}`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Valor sugerido según el país en tu perfil; puedes elegir
+                  cualquiera de estas cuatro monedas.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`price-${kind}`}>
+                  {kind === "buy"
+                    ? `Precio máximo a pagar (${currency})`
+                    : `Precio de venta (${currency})`}
+                </Label>
+                <Input
+                  id={`price-${kind}`}
+                  name="priceMajor"
+                  inputMode="decimal"
+                  placeholder="Ej. 15.000 o 2500"
+                  autoComplete="off"
+                  required
+                  className="rounded-xl font-medium tabular-nums"
+                  disabled={pending}
+                />
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Puedes escribir con puntos de miles (ej.{" "}
+                  <span className="tabular-nums">15.000</span>). Decimales con
+                  coma ( ej. <span className="tabular-nums">15.000,50</span>).
+                  Sin puntos de miles:{" "}
+                  <span className="tabular-nums">4200</span> o{" "}
+                  <span className="tabular-nums">4200,50</span>.
+                </p>
+              </div>
+              <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full rounded-2xl font-semibold tracking-tight sm:w-auto"
+                  disabled={pending}
+                >
+                  {pending ? (
+                    <>
+                      <Loader2
+                        className="size-4 shrink-0 animate-spin"
+                        aria-hidden
+                      />
+                      Publicando…
+                    </>
+                  ) : kind === "buy" ? (
+                    "Publicar búsqueda"
+                  ) : (
+                    "Publicar venta"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </>
   );
 }
 
@@ -351,20 +381,10 @@ export function MarketplacePanel({
           </p>
         </div>
         <div className="border-border/70 bg-muted/25 rounded-2xl border p-4 shadow-sm sm:p-5 md:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-            <IntentDialog
-              key={`buy-${defaultCurrency}`}
-              kind="buy"
-              editionLabel={editionLabel}
-              suggestedCurrency={defaultCurrency}
-            />
-            <IntentDialog
-              key={`sell-${defaultCurrency}`}
-              kind="sell"
-              editionLabel={editionLabel}
-              suggestedCurrency={defaultCurrency}
-            />
-          </div>
+          <NewPublicationDialogs
+            editionLabel={editionLabel}
+            suggestedCurrency={defaultCurrency}
+          />
           <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
             Tip mobile: usa números simples (ej. 15 o 120) y para decimales usa
             coma (ej. 15,5).
