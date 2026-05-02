@@ -37,3 +37,8 @@ export const MARKET_OFFER_STATUS = [
 ] as const;
 
 export type MarketOfferStatus = (typeof MARKET_OFFER_STATUS)[number];
+
+/** Filas en `market_deals.status` (migración 0012). */
+export const MARKET_DEAL_STATUS = ["open", "completed", "cancelled"] as const;
+
+export type MarketDealStatus = (typeof MARKET_DEAL_STATUS)[number];

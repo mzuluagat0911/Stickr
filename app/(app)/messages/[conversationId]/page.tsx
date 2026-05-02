@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import {
+  ConversationDealClosure,
+  type MyMarketReview,
+  type MarketDealRow,
+} from "@/components/features/conversation-deal-closure";
 import { ConversationMarketOffers } from "@/components/features/conversation-market-offers";
 import {
   conversationMarketLabel,
@@ -141,6 +146,28 @@ export default async function ConversationPage({
     }
   }
 
+  let dealRow: MarketDealRow | null = null;
+  let myReview: MyMarketReview = null;
+  if (row.market_intention_id) {
+    const { data: dealData, error: dealErr } = await supabase
+      .from("market_deals")
+      .select("id,status,user_a_completed_at,user_b_completed_at,completed_at")
+      .eq("conversation_id", conversationId)
+      .maybeSingle();
+    if (!dealErr && dealData?.id) {
+      dealRow = dealData as MarketDealRow;
+      const { data: revData } = await supabase
+        .from("reviews")
+        .select("id,rating,review_text")
+        .eq("market_deal_id", dealRow.id)
+        .eq("reviewer_id", user.id)
+        .maybeSingle();
+      if (revData?.id) {
+        myReview = revData as MyMarketReview;
+      }
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -164,6 +191,17 @@ export default async function ConversationPage({
           currentUserId={user.id}
           initialOffers={initialOffers}
           defaultCurrency={defaultCurrency}
+        />
+      ) : null}
+
+      {row.market_intention_id ? (
+        <ConversationDealClosure
+          conversationId={conversationId}
+          currentUserId={user.id}
+          userA={row.user_a}
+          userB={row.user_b}
+          deal={dealRow}
+          myReview={myReview}
         />
       ) : null}
 

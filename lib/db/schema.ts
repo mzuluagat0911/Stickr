@@ -401,6 +401,32 @@ export const marketOffers = pgTable(
   ],
 );
 
+/** Cierre bilateral de acuerdo en hilo marketplace (Fase 3.3). */
+export const marketDeals = pgTable(
+  "market_deals",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    marketIntentionId: uuid("market_intention_id")
+      .notNull()
+      .references(() => marketIntentions.id, { onDelete: "restrict" }),
+    status: text("status").notNull().default("open"),
+    userACompletedAt: timestamp("user_a_completed_at", { withTimezone: true }),
+    userBCompletedAt: timestamp("user_b_completed_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    unique("market_deals_conversation_id_key").on(t.conversationId),
+    check(
+      "market_deals_status_check",
+      sql.raw(`"status" IN ('open', 'completed', 'cancelled')`),
+    ),
+  ],
+);
+
 export const orders = pgTable(
   "orders",
   {
@@ -454,6 +480,8 @@ export const reviews = pgTable(
     orderId: uuid("order_id").references(() => orders.id, {
       onDelete: "set null",
     }),
+    /** Reseña ligada a un cierre de marketplace (Fase 3.3). */
+    marketDealId: uuid("market_deal_id"),
     reviewerId: uuid("reviewer_id")
       .notNull()
       .references(() => userProfiles.id, { onDelete: "cascade" }),
@@ -467,7 +495,11 @@ export const reviews = pgTable(
   () => [
     check(
       "reviews_context_check",
-      sql.raw(`"trade_id" IS NOT NULL OR "order_id" IS NOT NULL`),
+      sql.raw(
+        `(CASE WHEN "trade_id" IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN "order_id" IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN "market_deal_id" IS NOT NULL THEN 1 ELSE 0 END) = 1`,
+      ),
     ),
     check("reviews_rating_range", sql.raw(`"rating" BETWEEN 1 AND 5`)),
     check(

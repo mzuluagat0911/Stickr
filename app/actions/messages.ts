@@ -67,6 +67,14 @@ export async function openMarketplaceThreadAction(
     return fail(findErr.message);
   }
   if (existing?.id && typeof existing.id === "string") {
+    const { error: dealErr } = await supabase.from("market_deals").insert({
+      conversation_id: existing.id,
+      market_intention_id: intentId,
+      status: "open",
+    });
+    if (dealErr && dealErr.code !== "23505" && dealErr.code !== "42P01") {
+      console.warn("[openMarketplaceThread] market_deals:", dealErr.message);
+    }
     revalidatePath("/messages");
     revalidatePath(`/messages/${existing.id}`);
     return ok({ conversationId: existing.id });
@@ -86,6 +94,15 @@ export async function openMarketplaceThreadAction(
     .single();
 
   if (!insErr && inserted?.id && typeof inserted.id === "string") {
+    const { error: dealErr } = await supabase.from("market_deals").insert({
+      conversation_id: inserted.id,
+      market_intention_id: intentId,
+      status: "open",
+    });
+    if (dealErr && dealErr.code !== "23505" && dealErr.code !== "42P01") {
+      // 42P01: migración 0012 aún no aplicada; 23505: fila duplicada por carrera
+      console.warn("[openMarketplaceThread] market_deals:", dealErr.message);
+    }
     revalidatePath("/messages");
     revalidatePath(`/messages/${inserted.id}`);
     return ok({ conversationId: inserted.id });
@@ -100,6 +117,14 @@ export async function openMarketplaceThreadAction(
       .eq("market_intention_id", intentId)
       .maybeSingle();
     if (again?.id && typeof again.id === "string") {
+      const { error: dealErr } = await supabase.from("market_deals").insert({
+        conversation_id: again.id,
+        market_intention_id: intentId,
+        status: "open",
+      });
+      if (dealErr && dealErr.code !== "23505" && dealErr.code !== "42P01") {
+        console.warn("[openMarketplaceThread] market_deals:", dealErr.message);
+      }
       revalidatePath("/messages");
       revalidatePath(`/messages/${again.id}`);
       return ok({ conversationId: again.id });
