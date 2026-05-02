@@ -3,6 +3,7 @@
 import {
   type ReactNode,
   Fragment,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -37,6 +38,10 @@ import {
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
 import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
+import {
+  getTeamSearchBlobMap,
+  stickerMatchesAlbumSearch,
+} from "@/lib/teams/album-search";
 import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
@@ -106,13 +111,6 @@ const ALBUM_SECTION_OPTIONS: { value: string; label: string }[] = [
 const albumTabTriggerClass =
   "max-w-max shrink-0 grow-0 basis-auto rounded-lg px-3 py-2.5 text-xs font-semibold tracking-tight transition-[color,background-color,box-shadow] duration-200 hover:bg-background/55 hover:text-foreground sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm";
 
-function normalizeSearchText(v: string): string {
-  return v
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
 type Mut =
   | { op: "have"; stickerId: string }
   | { op: "duplicate"; stickerId: string; count: number }
@@ -148,6 +146,60 @@ async function runServerMut(m: Mut): Promise<void> {
   }
   const r = await markStickerDuplicateAction(m.stickerId, m.count);
   if (!r.ok) throw new Error(r.message);
+}
+
+type AlbumStatusFilter = "all" | "missing" | "have" | "duplicate" | "priority";
+
+function applyAlbumFilters(
+  catalog: CatalogStickerDTO[],
+  searchInput: string,
+  teamSearchBlobs: ReadonlyMap<string, string>,
+  statusFilter: AlbumStatusFilter,
+  userMap: UserStickerMapDTO | undefined,
+  wantSet: Set<string>,
+): CatalogStickerDTO[] {
+  const qRaw = searchInput.trim();
+  const bySearch = !qRaw
+    ? catalog
+    : catalog.filter((s) =>
+        stickerMatchesAlbumSearch(s, searchInput, teamSearchBlobs),
+      );
+  if (statusFilter === "all") return bySearch;
+  return bySearch.filter((s) => {
+    const entry = userMap?.[s.id];
+    if (statusFilter === "missing") return !entry;
+    if (statusFilter === "have") return entry?.status === "have";
+    if (statusFilter === "duplicate") return entry?.status === "duplicate";
+    return !entry && wantSet.has(s.id);
+  });
+}
+
+function pickAlbumSearchTab(
+  filtered: CatalogStickerDTO[],
+  teamsByConf: Map<Confederation, Team2026[]>,
+): string | null {
+  const tournament = filtered.filter(
+    (s) =>
+      s.teamCode === "FWC" && s.stickerNumber >= 1 && s.stickerNumber <= 15,
+  );
+  if (tournament.length > 0) return "tournament";
+  const specials = filtered.filter(
+    (s) =>
+      s.teamCode === "FWC" && s.stickerNumber >= 16 && s.stickerNumber <= 83,
+  );
+  if (specials.length > 0) return "specials";
+  const stickerByTeam = new Map<string, CatalogStickerDTO[]>();
+  for (const s of filtered) {
+    if (s.teamCode === "FWC") continue;
+    if (!stickerByTeam.has(s.teamCode)) stickerByTeam.set(s.teamCode, []);
+    stickerByTeam.get(s.teamCode)!.push(s);
+  }
+  for (const c of CONF_TAB_ORDER) {
+    const teams = teamsByConf.get(c) ?? [];
+    const any = teams.some((t) => (stickerByTeam.get(t.code) ?? []).length > 0);
+    if (any) return `conf-${c}`;
+  }
+  return null;
 }
 
 export type AlbumGridProps = {
@@ -264,6 +316,8 @@ export function AlbumGrid({
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
 
+  const teamSearchBlobs = useMemo(() => getTeamSearchBlobMap(), []);
+
   const { data: userMap } = useQuery({
     queryKey: key,
     queryFn: async () => {
@@ -274,6 +328,39 @@ export function AlbumGrid({
     initialData: initialUserMap,
     staleTime: 60_000,
   });
+
+  const teamsByConf = useMemo(() => {
+    const m = new Map<Confederation, Team2026[]>();
+    for (const c of CONF_TAB_ORDER) m.set(c, []);
+    for (const t of TEAMS_2026) {
+      m.get(t.confederation)!.push(t);
+    }
+    for (const c of CONF_TAB_ORDER) {
+      m.set(
+        c,
+        (m.get(c) ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
+      );
+    }
+    return m;
+  }, []);
+
+  const onSearchQueryChange = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (!value.trim()) return;
+      const filtered = applyAlbumFilters(
+        catalog,
+        value,
+        teamSearchBlobs,
+        statusFilter,
+        userMap,
+        wantSet,
+      );
+      const next = pickAlbumSearchTab(filtered, teamsByConf);
+      if (next) setTab(next);
+    },
+    [catalog, teamSearchBlobs, statusFilter, userMap, wantSet, teamsByConf],
+  );
 
   const mutation = useMutation({
     mutationFn: (m: Mut) => runServerMut(m),
@@ -349,36 +436,18 @@ export function AlbumGrid({
     toast.success("Archivo descargado");
   };
 
-  const filteredCatalog = useMemo(() => {
-    const q = normalizeSearchText(searchQuery.trim());
-    const bySearch = !q
-      ? catalog
-      : catalog.filter((s) => {
-          const id = normalizeSearchText(s.id);
-          const num = String(s.stickerNumber);
-          const team = normalizeSearchText(s.teamCode);
-          const teamName =
-            normalizeSearchText(
-              TEAMS_2026.find((t) => t.code === s.teamCode)?.name ?? "",
-            ) || "";
-          const player = normalizeSearchText(s.playerName ?? "");
-          return (
-            id.includes(q) ||
-            num.includes(q) ||
-            team.includes(q) ||
-            teamName.includes(q) ||
-            player.includes(q)
-          );
-        });
-    if (statusFilter === "all") return bySearch;
-    return bySearch.filter((s) => {
-      const entry = userMap?.[s.id];
-      if (statusFilter === "missing") return !entry;
-      if (statusFilter === "have") return entry?.status === "have";
-      if (statusFilter === "duplicate") return entry?.status === "duplicate";
-      return !entry && wantSet.has(s.id);
-    });
-  }, [catalog, searchQuery, statusFilter, userMap, wantSet]);
+  const filteredCatalog = useMemo(
+    () =>
+      applyAlbumFilters(
+        catalog,
+        searchQuery,
+        teamSearchBlobs,
+        statusFilter,
+        userMap,
+        wantSet,
+      ),
+    [catalog, searchQuery, statusFilter, userMap, wantSet, teamSearchBlobs],
+  );
 
   const hasSearch = searchQuery.trim().length > 0;
 
@@ -401,21 +470,6 @@ export function AlbumGrid({
       ),
     [filteredCatalog],
   );
-
-  const teamsByConf = useMemo(() => {
-    const m = new Map<Confederation, Team2026[]>();
-    for (const c of CONF_TAB_ORDER) m.set(c, []);
-    for (const t of TEAMS_2026) {
-      m.get(t.confederation)!.push(t);
-    }
-    for (const c of CONF_TAB_ORDER) {
-      m.set(
-        c,
-        (m.get(c) ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
-      );
-    }
-    return m;
-  }, []);
 
   const stickerByTeam = useMemo(() => {
     const m = new Map<string, CatalogStickerDTO[]>();
@@ -526,7 +580,6 @@ export function AlbumGrid({
     );
   };
 
-  const collected = stats.have + stats.duplicateStickers;
   const pctLabel = `${Math.round(stats.percentCollected * 100)}%`;
 
   const emptySearchHint =
@@ -581,7 +634,7 @@ export function AlbumGrid({
               aria-label="Buscar en el álbum por código o nombre"
               placeholder="Buscar por número (7), equipo (FWC) o nombre…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
               className={searchQuery.trim() ? "pr-10" : undefined}
             />
             {searchQuery.trim() ? (
@@ -591,7 +644,7 @@ export function AlbumGrid({
                 size="icon"
                 className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 rounded-lg"
                 aria-label="Limpiar búsqueda"
-                onClick={() => setSearchQuery("")}
+                onClick={() => onSearchQueryChange("")}
               >
                 <X className="size-4" />
               </Button>
@@ -636,7 +689,7 @@ export function AlbumGrid({
         </div>
       </div>
 
-      <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-20 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
+      <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-30 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1 space-y-2">
             <p className="text-foreground text-base leading-snug font-medium tracking-tight">

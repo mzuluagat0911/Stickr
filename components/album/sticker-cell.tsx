@@ -100,12 +100,12 @@ export function StickerCell({
   const showImage = Boolean(sticker.imageUrl);
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className="relative isolate">
       {state === "missing" && onToggleExchangePriority ? (
         <button
           type="button"
           className={cn(
-            "border-border/55 bg-background/95 text-muted-foreground hover:bg-muted focus-visible:ring-ring absolute top-1 right-1 z-30 flex size-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors outline-none focus-visible:ring-2",
+            "border-border/55 bg-background/95 text-muted-foreground hover:bg-muted focus-visible:ring-ring absolute top-0.5 right-0.5 z-10 flex size-6 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors outline-none focus-visible:ring-2 sm:top-1 sm:right-1 sm:size-7",
             exchangePriority &&
               "border-amber-500/45 bg-amber-500/15 text-amber-700 dark:text-amber-300",
           )}
@@ -124,7 +124,7 @@ export function StickerCell({
         >
           <StarIcon
             className={cn(
-              "size-4 shrink-0",
+              "size-3.5 shrink-0 sm:size-4",
               exchangePriority
                 ? "fill-amber-500 text-amber-600 dark:fill-amber-400 dark:text-amber-300"
                 : "opacity-70",
@@ -254,14 +254,18 @@ export function StickerCell({
 
       {panelOpen && state === "duplicate" ? (
         <div
-          className="bg-popover text-popover-foreground ring-foreground/10 animate-in fade-in-0 zoom-in-95 absolute top-full left-0 z-50 mt-1 w-48 rounded-lg p-2 text-xs shadow-md ring-1"
+          className={cn(
+            "bg-popover text-popover-foreground ring-foreground/10 animate-in fade-in-0 zoom-in-95 absolute z-[60] rounded-lg p-2 text-xs shadow-md ring-1",
+            "top-full left-1/2 mt-1 w-[min(17.5rem,calc(100vw-1.5rem))] max-w-none -translate-x-1/2",
+            "max-h-[min(58dvh,22rem)] overflow-y-auto overscroll-contain sm:left-0 sm:max-h-none sm:w-48 sm:translate-x-0 sm:overflow-visible",
+          )}
           role="dialog"
           aria-label={`Cantidad repetida ${sticker.stickerNumber}`}
         >
-          <p className="text-muted-foreground mb-2 font-medium">
+          <p className="text-muted-foreground mb-1.5 font-medium sm:mb-2">
             Cantidad de figuritas
           </p>
-          <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-5 gap-0.5 sm:flex sm:flex-wrap sm:gap-1">
             {(
               [
                 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -273,7 +277,7 @@ export function StickerCell({
                 type="button"
                 size="sm"
                 variant={dupCount === n ? "default" : "outline"}
-                className="h-7 min-w-8 px-1.5 text-[11px]"
+                className="h-6 min-w-0 px-0 text-[10px] font-medium sm:h-7 sm:min-w-8 sm:px-1.5 sm:text-[11px]"
                 onClick={() => {
                   onSetDuplicate(n);
                   setPanelOpen(false);
@@ -288,7 +292,7 @@ export function StickerCell({
               type="button"
               variant="secondary"
               size="sm"
-              className="h-8 w-full text-xs"
+              className="h-7 w-full text-[11px] sm:h-8 sm:text-xs"
               onClick={() => {
                 onSetHave();
                 setPanelOpen(false);
@@ -300,7 +304,7 @@ export function StickerCell({
               type="button"
               variant="ghost"
               size="sm"
-              className="text-destructive hover:text-destructive h-8 w-full text-xs"
+              className="text-destructive hover:text-destructive h-7 w-full text-[11px] sm:h-8 sm:text-xs"
               onClick={() => {
                 onUnmark();
                 setPanelOpen(false);
