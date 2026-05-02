@@ -94,9 +94,12 @@ export function isMarketCurrency(code: unknown): code is MarketCurrencyCode {
 
 /** Moneda inicial sugerida según país del perfil. */
 export function defaultMarketCurrency(
-  countryCode: string | null | undefined,
+  countryCode: string | null | undefined | unknown,
 ): MarketCurrencyCode {
-  const cc = (countryCode ?? "").trim().toUpperCase();
+  const cc =
+    countryCode == null || countryCode === ""
+      ? ""
+      : String(countryCode).trim().toUpperCase();
   if (cc === "AR") return "ARS";
   if (cc === "CO") return "COP";
   if (USD_USA_CENTROAMERICA_ISO.has(cc)) return "USD";

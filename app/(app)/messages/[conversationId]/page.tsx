@@ -126,9 +126,10 @@ export default async function ConversationPage({
   }
 
   const messages = (msgs ?? []) as MsgRow[];
-  const title =
-    conversationMarketLabel(normalizeIntentEmbed(row.market_intentions)) ??
-    "Conversación";
+  const title = row.market_intention_id
+    ? (conversationMarketLabel(normalizeIntentEmbed(row.market_intentions)) ??
+      "Compra/venta")
+    : "Intercambio";
   const peer = row.user_a === user.id ? row.user_b : row.user_a;
 
   let initialOffers: MarketOfferRow[] = [];

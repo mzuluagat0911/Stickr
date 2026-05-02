@@ -134,6 +134,100 @@ export async function openMarketplaceThreadAction(
   return fail(insErr?.message ?? "No pudimos crear el hilo de mensajes.");
 }
 
+/**
+ * Abre o reutiliza el chat directo (sin publicación de marketplace) con otro usuario.
+ * Un solo hilo general por par: `market_intention_id` es null.
+ */
+export async function openDirectConversationAction(
+  otherUserId: string,
+): Promise<ActionResult<{ conversationId: string }>> {
+  const parsed = conversationIdSchema.safeParse(otherUserId);
+  if (!parsed.success) {
+    return fail(parsed.error.issues[0]?.message ?? "Usuario inválido.");
+  }
+  const peerId = parsed.data;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userErr,
+  } = await supabase.auth.getUser();
+  if (userErr || !user) {
+    return fail("Sesión no válida.");
+  }
+  if (peerId === user.id) {
+    return fail("No puedes abrir un chat contigo mismo.");
+  }
+
+  const { data: peer, error: pErr } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .eq("id", peerId)
+    .maybeSingle();
+
+  if (pErr) {
+    return fail(pErr.message);
+  }
+  if (!peer?.id) {
+    return fail("No encontramos a esa persona.");
+  }
+
+  const { userA, userB } = orderedPair(user.id, peerId);
+
+  const { data: existing, error: findErr } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("user_a", userA)
+    .eq("user_b", userB)
+    .is("market_intention_id", null)
+    .maybeSingle();
+
+  if (findErr) {
+    return fail(findErr.message);
+  }
+  if (existing?.id && typeof existing.id === "string") {
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${existing.id}`);
+    return ok({ conversationId: existing.id });
+  }
+
+  const now = new Date().toISOString();
+  const { data: inserted, error: insErr } = await supabase
+    .from("conversations")
+    .insert({
+      user_a: userA,
+      user_b: userB,
+      market_intention_id: null,
+      created_at: now,
+      last_message_at: now,
+    })
+    .select("id")
+    .single();
+
+  if (!insErr && inserted?.id && typeof inserted.id === "string") {
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${inserted.id}`);
+    return ok({ conversationId: inserted.id });
+  }
+
+  if (insErr?.code === "23505") {
+    const { data: again } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("user_a", userA)
+      .eq("user_b", userB)
+      .is("market_intention_id", null)
+      .maybeSingle();
+    if (again?.id && typeof again.id === "string") {
+      revalidatePath("/messages");
+      revalidatePath(`/messages/${again.id}`);
+      return ok({ conversationId: again.id });
+    }
+  }
+
+  return fail(insErr?.message ?? "No pudimos abrir el chat.");
+}
+
 export async function sendMessageAction(
   conversationId: string,
   content: string,

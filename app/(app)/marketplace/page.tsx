@@ -38,11 +38,37 @@ export default async function MarketplacePage() {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login");
+  let user: { id: string };
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      redirect("/login");
+    }
+    user = data.user;
+  } catch (e) {
+    if (
+      typeof e === "object" &&
+      e !== null &&
+      "digest" in e &&
+      typeof (e as { digest?: unknown }).digest === "string" &&
+      String((e as { digest: string }).digest).startsWith("NEXT_REDIRECT")
+    ) {
+      throw e;
+    }
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Compra/venta
+        </h1>
+        <p
+          className="text-muted-foreground max-w-xl text-sm leading-relaxed"
+          role="alert"
+        >
+          No pudimos validar tu sesión. Cierra sesión y vuelve a entrar, o
+          recarga la página.
+        </p>
+      </div>
+    );
   }
 
   let defaultCurrency: MarketCurrencyCode = defaultMarketCurrency(null);
@@ -62,7 +88,7 @@ export default async function MarketplacePage() {
         ? profile.album_edition.trim()
         : "";
     const edition = editionRaw || "PR-International";
-    defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
+    defaultCurrency = defaultMarketCurrency(profile?.country_code);
     editionLabel =
       ALBUM_EDITION_OPTIONS.find((o) => o.value === edition)?.label ?? edition;
 

@@ -9,8 +9,15 @@ import { formatDecimalEs, formatIntegerEs } from "@/lib/format-numbers";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 
+import { DiscoverExchangeChatButton } from "@/components/features/discover-exchange-chat-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 
 countries.registerLocale(es as import("i18n-iso-countries").LocaleData);
@@ -101,9 +108,10 @@ export default async function DiscoverPage() {
           )}
           , para coordinar cambios cara a cara o por tus medios de contacto. Las
           tarjetas con más coincidencia van primero: repetidas que tú necesitas
-          (lo que falta o marcaste con prioridad en el álbum). Los porcentajes
-          siguen la edición de cada persona. No mostramos perfiles con el álbum
-          en privado.
+          (lo que falta o marcaste con prioridad en el álbum). Cuando hay
+          cruces, podés abrir un chat para coordinar el intercambio. Los
+          porcentajes siguen la edición de cada persona. No mostramos perfiles
+          con el álbum en privado.
         </p>
       </header>
 
@@ -205,6 +213,14 @@ export default async function DiscoverPage() {
                     orientarte.
                   </p>
                 </CardContent>
+                {c.matchDistinctHelp > 0 || c.wishlistOverlapDistinct > 0 ? (
+                  <CardFooter className="border-border/50 flex flex-col gap-2 border-t pt-4 pb-4 sm:flex-row sm:items-center">
+                    <DiscoverExchangeChatButton
+                      otherUserId={c.otherUserId}
+                      username={c.username?.trim() || "coleccionista"}
+                    />
+                  </CardFooter>
+                ) : null}
               </Card>
             </li>
           ))}
