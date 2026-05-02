@@ -101,6 +101,37 @@ export function StickerCell({
 
   return (
     <div ref={wrapRef} className="relative">
+      {state === "missing" && onToggleExchangePriority ? (
+        <button
+          type="button"
+          className={cn(
+            "border-border/55 bg-background/95 text-muted-foreground hover:bg-muted focus-visible:ring-ring absolute top-1 right-1 z-30 flex size-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors outline-none focus-visible:ring-2",
+            exchangePriority &&
+              "border-amber-500/45 bg-amber-500/15 text-amber-700 dark:text-amber-300",
+          )}
+          aria-label={
+            exchangePriority
+              ? "Quitar prioridad en Intercambio"
+              : "Priorizar en Intercambio"
+          }
+          aria-pressed={exchangePriority}
+          tabIndex={-1}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExchangePriority();
+          }}
+        >
+          <StarIcon
+            className={cn(
+              "size-4 shrink-0",
+              exchangePriority
+                ? "fill-amber-500 text-amber-600 dark:fill-amber-400 dark:text-amber-300"
+                : "opacity-70",
+            )}
+          />
+        </button>
+      ) : null}
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <button
@@ -167,12 +198,7 @@ export function StickerCell({
                   {sticker.stickerNumber}
                 </span>
                 {state === "missing" ? (
-                  exchangePriority ? (
-                    <StarIcon
-                      className="size-4 shrink-0 fill-amber-500 text-amber-600 dark:fill-amber-400 dark:text-amber-300"
-                      aria-label="Prioridad intercambio"
-                    />
-                  ) : (
+                  onToggleExchangePriority ? null : (
                     <PlusIcon className="size-4 shrink-0 opacity-60" />
                   )
                 ) : null}

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { MarketplacePanelClient } from "@/components/features/marketplace-panel-client";
+import { MarketplacePanelGate } from "@/components/features/marketplace-panel-gate";
 import { ALBUM_EDITION_OPTIONS } from "@/lib/constants/profile";
 import {
   defaultMarketCurrency,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/marketplace/currency";
 import { getMarketFeed } from "@/lib/marketplace/feed";
 import type { MarketFeedIntent } from "@/lib/marketplace/types";
+import { shouldRethrowFromRsc } from "@/lib/next/rsc-rethrow";
 import { createClient } from "@/lib/supabase/server";
 
 function cloneSerializableIntents(
@@ -48,11 +49,32 @@ export async function MarketplaceBody() {
     return <ConnectionFallback />;
   }
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
-    redirect("/login");
+  let user: { id: string };
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      redirect("/login");
+    }
+    user = data.user;
+  } catch (e) {
+    if (shouldRethrowFromRsc(e)) {
+      throw e;
+    }
+    return (
+      <div className="space-y-4">
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">
+          Compra/venta
+        </h1>
+        <p
+          className="text-muted-foreground max-w-xl text-sm leading-relaxed"
+          role="alert"
+        >
+          No pudimos validar tu sesión. Recarga la página o vuelve a entrar con
+          tu cuenta.
+        </p>
+      </div>
+    );
   }
-  const user = data.user;
 
   let defaultCurrency: MarketCurrencyCode = defaultMarketCurrency(null);
   let editionLabel = "PR-International";
@@ -89,8 +111,16 @@ export async function MarketplaceBody() {
   }
 
   const safeIntents = cloneSerializableIntents(intents);
+  let intentsJson = "[]";
+  try {
+    intentsJson = JSON.stringify(safeIntents);
+  } catch {
+    intentsJson = "[]";
+  }
   const safeEdition =
     typeof editionLabel === "string" ? editionLabel : "PR-International";
+  const currentUserId =
+    typeof user.id === "string" && user.id.length > 0 ? user.id : null;
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -105,12 +135,12 @@ export async function MarketplaceBody() {
           perfil.
         </p>
       </header>
-      <MarketplacePanelClient
+      <MarketplacePanelGate
         editionLabel={safeEdition}
         defaultCurrency={defaultCurrency}
-        intents={safeIntents}
+        intentsJson={intentsJson}
         feedError={feedError}
-        currentUserId={user.id}
+        currentUserId={currentUserId}
       />
     </div>
   );

@@ -10,7 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutGridIcon, ListChecks } from "lucide-react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -38,11 +38,18 @@ import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
 import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
 import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
-import { AlbumListView } from "@/components/album/album-list-view";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -77,6 +84,24 @@ const CONF_TAB_HINT: Record<Confederation, string> = {
   OFC: "Figuritas de selecciones · Oceanía (OFC)",
   UEFA: "Figuritas de selecciones · Europa (UEFA)",
 };
+
+const CONF_SELECT_LABEL: Record<Confederation, string> = {
+  AFC: "Asia (AFC)",
+  CAF: "África (CAF)",
+  CONCACAF: "Norte y Caribe (Concacaf)",
+  CONMEBOL: "Sudamérica (CONMEBOL)",
+  OFC: "Oceanía (OFC)",
+  UEFA: "Europa (UEFA)",
+};
+
+const ALBUM_SECTION_OPTIONS: { value: string; label: string }[] = [
+  { value: "tournament", label: "Torneo (figuritas 1–15)" },
+  { value: "specials", label: "Especiales" },
+  ...CONF_TAB_ORDER.map((c) => ({
+    value: `conf-${c}`,
+    label: CONF_SELECT_LABEL[c],
+  })),
+];
 
 const albumTabTriggerClass =
   "max-w-max shrink-0 grow-0 basis-auto rounded-lg px-3 py-2.5 text-xs font-semibold tracking-tight transition-[color,background-color,box-shadow] duration-200 hover:bg-background/55 hover:text-foreground sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm";
@@ -231,11 +256,10 @@ export function AlbumGrid({
   });
 
   const [tab, setTab] = useState("tournament");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "missing" | "have" | "duplicate"
+    "all" | "missing" | "have" | "duplicate" | "priority"
   >("all");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -351,9 +375,10 @@ export function AlbumGrid({
       const entry = userMap?.[s.id];
       if (statusFilter === "missing") return !entry;
       if (statusFilter === "have") return entry?.status === "have";
-      return entry?.status === "duplicate";
+      if (statusFilter === "duplicate") return entry?.status === "duplicate";
+      return !entry && wantSet.has(s.id);
     });
-  }, [catalog, searchQuery, statusFilter, userMap]);
+  }, [catalog, searchQuery, statusFilter, userMap, wantSet]);
 
   const hasSearch = searchQuery.trim().length > 0;
 
@@ -521,80 +546,92 @@ export function AlbumGrid({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mi álbum</h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-            Pulsa para avanzar el estado: falta → la tengo → repetida. Si está
-            repetida, toca la casilla para la cantidad (o elige cantidad en la
-            vista lista). En falta puedes priorizar en{" "}
-            <Link
-              className="text-foreground underline-offset-2 hover:underline"
-              href="/discover"
-            >
-              Intercambio
-            </Link>
-            , exportar tus faltantes o marcar en lote desde el panel sticky de
-            abajo.
+            <span className="md:hidden">
+              Toca una casilla para avanzar: falta → tengo → repetida. En falta,
+              la estrella arriba a la derecha prioriza para{" "}
+              <Link
+                className="text-foreground font-medium underline-offset-2 hover:underline"
+                href="/discover"
+              >
+                Intercambio
+              </Link>
+              . Exportar va en el panel de abajo.
+            </span>
+            <span className="hidden md:inline">
+              Pulsa para avanzar el estado: falta → la tengo → repetida. Si está
+              repetida, toca la casilla para elegir la cantidad. En falta, la
+              estrella arriba a la derecha prioriza para{" "}
+              <Link
+                className="text-foreground underline-offset-2 hover:underline"
+                href="/discover"
+              >
+                Intercambio
+              </Link>
+              ; también puedes filtrar por «Prioridad» o usar el menú
+              contextual. Exportar faltantes y marcar en lote van en el panel
+              sticky de abajo.
+            </span>
           </p>
         </div>
         <div className="max-w-lg space-y-3">
-          <Input
-            type="search"
-            autoComplete="off"
-            aria-label="Buscar en el álbum por código o nombre"
-            placeholder="Buscar por número (7), equipo (FWC) o nombre…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-muted-foreground text-xs font-medium">
-              Vista
-            </span>
-            <div className="bg-muted/50 inline-flex gap-0.5 rounded-xl border p-1">
+          <div className="relative">
+            <Input
+              type="search"
+              autoComplete="off"
+              aria-label="Buscar en el álbum por código o nombre"
+              placeholder="Buscar por número (7), equipo (FWC) o nombre…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={searchQuery.trim() ? "pr-10" : undefined}
+            />
+            {searchQuery.trim() ? (
               <Button
                 type="button"
-                size="sm"
-                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                className="gap-1.5 rounded-lg"
-                onClick={() => setViewMode("grid")}
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 rounded-lg"
+                aria-label="Limpiar búsqueda"
+                onClick={() => setSearchQuery("")}
               >
-                <LayoutGridIcon className="size-4" aria-hidden />
-                Cuadrícula
+                <X className="size-4" />
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                className="gap-1.5 rounded-lg"
-                onClick={() => setViewMode("list")}
-              >
-                <ListChecks className="size-4" aria-hidden />
-                Lista
-              </Button>
-            </div>
+            ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-1.5">
             <span className="text-muted-foreground text-xs font-medium">
               Estado
             </span>
-            {[
-              ["all", "Todas"],
-              ["missing", "Faltantes"],
-              ["have", "Tengo"],
-              ["duplicate", "Repetidas"],
-            ].map(([value, label]) => (
-              <Button
-                key={value}
-                type="button"
-                size="sm"
-                variant={statusFilter === value ? "secondary" : "outline"}
-                className="h-7 rounded-full px-3 text-xs"
-                onClick={() =>
-                  setStatusFilter(
-                    value as "all" | "missing" | "have" | "duplicate",
-                  )
-                }
-              >
-                {label}
-              </Button>
-            ))}
+            <div className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+              {(
+                [
+                  ["all", "Todas"],
+                  ["missing", "Faltantes"],
+                  ["priority", "Prioridad"],
+                  ["have", "Tengo"],
+                  ["duplicate", "Repetidas"],
+                ] as const
+              ).map(([value, label]) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant={statusFilter === value ? "secondary" : "outline"}
+                  className="h-9 shrink-0 rounded-full px-3.5 text-xs sm:h-7"
+                  onClick={() =>
+                    setStatusFilter(
+                      value as
+                        | "all"
+                        | "missing"
+                        | "have"
+                        | "duplicate"
+                        | "priority",
+                    )
+                  }
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -659,117 +696,126 @@ export function AlbumGrid({
         </div>
       </div>
 
-      {emptySearchHint && viewMode !== "list" ? (
+      {emptySearchHint ? (
         <div className="border-muted-foreground/35 rounded-xl border border-dashed px-4 py-2">
           {emptySearchHint}
         </div>
       ) : null}
 
-      {viewMode === "list" ? (
-        emptySearchHint ? (
-          <div className="border-muted-foreground/35 rounded-xl border border-dashed px-4 py-2">
-            {emptySearchHint}
-          </div>
-        ) : (
-          <AlbumListView
-            catalog={filteredCatalog}
-            userMap={userMap ?? {}}
-            wantSet={wantSet}
-            onToggleWant={(id) => ewMutation.mutate(id)}
-            onFalta={(id) => mutation.mutate({ op: "unmark", stickerId: id })}
-            onTengo={(id) => mutation.mutate({ op: "have", stickerId: id })}
-            onRepetida={(id, c) =>
-              mutation.mutate({ op: "duplicate", stickerId: id, count: c })
-            }
-          />
-        )
-      ) : (
-        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-          <div
-            className="border-border/50 bg-muted/45 max-w-full scroll-px-3 overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] sm:scroll-px-0 sm:[scrollbar-width:none] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 sm:[&::-webkit-scrollbar]:hidden"
-            role="region"
-            aria-label="Secciones del álbum"
+      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+        <div className="space-y-1.5 md:hidden">
+          <Label
+            htmlFor="album-section-select"
+            className="text-muted-foreground text-xs font-medium"
           >
-            <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
-              <TabsTrigger
-                value="tournament"
-                title="Figuritas del torneo (1–15)"
-                className={albumTabTriggerClass}
-              >
-                Torneo
-              </TabsTrigger>
-              <TabsTrigger
-                value="specials"
-                title="Figuritas especiales"
-                className={albumTabTriggerClass}
-              >
-                Especiales
-              </TabsTrigger>
-              {CONF_TAB_ORDER.map((c) => (
-                <TabsTrigger
-                  key={c}
-                  value={`conf-${c}`}
-                  title={CONF_TAB_HINT[c]}
-                  className={albumTabTriggerClass}
-                >
-                  {c}
-                </TabsTrigger>
+            Sección del álbum
+          </Label>
+          <Select value={tab} onValueChange={setTab}>
+            <SelectTrigger
+              id="album-section-select"
+              className="border-border/60 bg-background h-11 w-full rounded-xl px-3 shadow-sm"
+            >
+              <SelectValue placeholder="Elige una sección" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              align="start"
+              className="max-h-[min(70vh,22rem)] min-w-[var(--radix-select-trigger-width)]"
+            >
+              {ALBUM_SECTION_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
               ))}
-            </TabsList>
-          </div>
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-[11px] leading-snug">
+            En pantalla grande también puedes usar las pestañas horizontales.
+          </p>
+        </div>
 
-          <TabsContent value="tournament">
-            {emptySearchHint ? null : tournament.length === 0 ? (
+        <div
+          className="border-border/50 bg-muted/45 hidden max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] md:block md:scroll-px-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 md:[&::-webkit-scrollbar]:hidden"
+          role="region"
+          aria-label="Secciones del álbum (vista ancha)"
+        >
+          <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
+            <TabsTrigger
+              value="tournament"
+              title="Figuritas del torneo (1–15)"
+              className={albumTabTriggerClass}
+            >
+              Torneo
+            </TabsTrigger>
+            <TabsTrigger
+              value="specials"
+              title="Figuritas especiales"
+              className={albumTabTriggerClass}
+            >
+              Especiales
+            </TabsTrigger>
+            {CONF_TAB_ORDER.map((c) => (
+              <TabsTrigger
+                key={c}
+                value={`conf-${c}`}
+                title={CONF_TAB_HINT[c]}
+                className={albumTabTriggerClass}
+              >
+                {c}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <TabsContent value="tournament">
+          {emptySearchHint ? null : tournament.length === 0 ? (
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              En esta vista no hay figuritas tournament{" "}
+              {hasSearch ? "que coincidan con tu búsqueda" : "en este catálogo"}
+              .
+            </p>
+          ) : (
+            <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
+              {tournament.map((s) => renderSticker(s))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="specials">
+          {emptySearchHint ? null : specials.length === 0 ? (
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              No hay specials para mostrar aquí{" "}
+              {hasSearch ? "con ese filtro" : "."}
+            </p>
+          ) : (
+            <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
+              {specials.map((s) => renderSticker(s))}
+            </div>
+          )}
+        </TabsContent>
+
+        {CONF_TAB_ORDER.map((c) => (
+          <TabsContent key={c} value={`conf-${c}`} className="space-y-2">
+            {emptySearchHint ? null : (teamsByConf.get(c) ?? []).every(
+                (team) => (stickerByTeam.get(team.code) ?? []).length === 0,
+              ) ? (
               <p className="text-muted-foreground py-8 text-center text-sm">
-                En esta vista no hay figuritas tournament{" "}
-                {hasSearch
-                  ? "que coincidan con tu búsqueda"
-                  : "en este catálogo"}
-                .
+                Ningún equipo tiene figuritas aquí{" "}
+                {hasSearch ? "con tu búsqueda" : "en esta vista"}.
               </p>
             ) : (
-              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
-                {tournament.map((s) => renderSticker(s))}
-              </div>
+              (teamsByConf.get(c) ?? []).map((team) => (
+                <TeamCollapsible
+                  key={team.code}
+                  team={team}
+                  stickers={stickerByTeam.get(team.code) ?? []}
+                  renderCell={renderSticker}
+                />
+              ))
             )}
           </TabsContent>
-
-          <TabsContent value="specials">
-            {emptySearchHint ? null : specials.length === 0 ? (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                No hay specials para mostrar aquí{" "}
-                {hasSearch ? "con ese filtro" : "."}
-              </p>
-            ) : (
-              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
-                {specials.map((s) => renderSticker(s))}
-              </div>
-            )}
-          </TabsContent>
-
-          {CONF_TAB_ORDER.map((c) => (
-            <TabsContent key={c} value={`conf-${c}`} className="space-y-2">
-              {emptySearchHint ? null : (teamsByConf.get(c) ?? []).every(
-                  (team) => (stickerByTeam.get(team.code) ?? []).length === 0,
-                ) ? (
-                <p className="text-muted-foreground py-8 text-center text-sm">
-                  Ningún equipo tiene figuritas aquí{" "}
-                  {hasSearch ? "con tu búsqueda" : "en esta vista"}.
-                </p>
-              ) : (
-                (teamsByConf.get(c) ?? []).map((team) => (
-                  <TeamCollapsible
-                    key={team.code}
-                    team={team}
-                    stickers={stickerByTeam.get(team.code) ?? []}
-                    renderCell={renderSticker}
-                  />
-                ))
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
-      )}
+        ))}
+      </Tabs>
 
       <AlbumBulkDialog
         open={bulkOpen}
