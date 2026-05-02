@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { MarketplacePanelGate } from "@/components/features/marketplace-panel-gate";
+import { MarketplaceServerView } from "@/components/features/marketplace-server-view";
 import { ALBUM_EDITION_OPTIONS } from "@/lib/constants/profile";
 import {
   defaultMarketCurrency,
@@ -10,16 +10,6 @@ import { getMarketFeed } from "@/lib/marketplace/feed";
 import type { MarketFeedIntent } from "@/lib/marketplace/types";
 import { shouldRethrowFromRsc } from "@/lib/next/rsc-rethrow";
 import { createClient } from "@/lib/supabase/server";
-
-function cloneSerializableIntents(
-  intents: MarketFeedIntent[],
-): MarketFeedIntent[] {
-  try {
-    return JSON.parse(JSON.stringify(intents)) as MarketFeedIntent[];
-  } catch {
-    return [];
-  }
-}
 
 function ConnectionFallback() {
   return (
@@ -38,10 +28,20 @@ function ConnectionFallback() {
   );
 }
 
+export type MarketplaceBodyProps = {
+  flashOk: boolean;
+  flashCancelled: boolean;
+  flashErr: string | null;
+};
+
 /**
  * Contenido principal de Compra/venta; separado para envolver en try/catch en page.tsx.
  */
-export async function MarketplaceBody() {
+export async function MarketplaceBody({
+  flashOk,
+  flashCancelled,
+  flashErr,
+}: MarketplaceBodyProps) {
   let supabase;
   try {
     supabase = await createClient();
@@ -110,13 +110,6 @@ export async function MarketplaceBody() {
         : "No pudimos cargar compra/venta. Recarga la página.";
   }
 
-  const safeIntents = cloneSerializableIntents(intents);
-  let intentsJson = "[]";
-  try {
-    intentsJson = JSON.stringify(safeIntents);
-  } catch {
-    intentsJson = "[]";
-  }
   const safeEdition =
     typeof editionLabel === "string" ? editionLabel : "PR-International";
   const currentUserId =
@@ -135,12 +128,15 @@ export async function MarketplaceBody() {
           perfil.
         </p>
       </header>
-      <MarketplacePanelGate
+      <MarketplaceServerView
         editionLabel={safeEdition}
         defaultCurrency={defaultCurrency}
-        intentsJson={intentsJson}
+        intents={intents}
         feedError={feedError}
         currentUserId={currentUserId}
+        flashOk={flashOk}
+        flashCancelled={flashCancelled}
+        flashErr={flashErr}
       />
     </div>
   );

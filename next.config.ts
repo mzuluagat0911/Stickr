@@ -20,6 +20,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
+  /** Dev: mismo Next en localhost pero el navegador en 127.0.0.1 (HMR /_next/*). */
+  allowedDevOrigins: ["127.0.0.1"],
   turbopack: {
     root: projectRoot,
   },

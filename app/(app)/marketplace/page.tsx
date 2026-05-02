@@ -7,13 +7,33 @@ import { MarketplaceBody } from "./marketplace-body";
 
 export const dynamic = "force-dynamic";
 
-export default async function MarketplacePage() {
+type MarketplaceSearchParams = {
+  ok?: string;
+  err?: string;
+  cancelled?: string;
+};
+
+export default async function MarketplacePage({
+  searchParams,
+}: {
+  searchParams: Promise<MarketplaceSearchParams>;
+}) {
   if (!hasPublicSupabaseConfig()) {
     redirect("/login");
   }
 
+  const sp = await searchParams;
+  const flashOk = sp.ok === "1";
+  const flashCancelled = sp.cancelled === "1";
+  const flashErr =
+    typeof sp.err === "string" && sp.err.trim().length > 0 ? sp.err : null;
+
   try {
-    return await MarketplaceBody();
+    return await MarketplaceBody({
+      flashOk,
+      flashCancelled,
+      flashErr,
+    });
   } catch (e) {
     if (shouldRethrowFromRsc(e)) {
       throw e;

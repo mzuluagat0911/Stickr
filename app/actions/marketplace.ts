@@ -4,13 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { formatMinorCurrency } from "@/lib/format-currency";
-import type { MarketFeedIntent } from "@/lib/marketplace/types";
 import type { ActionResult } from "@/lib/types/result";
 import { fail, ok } from "@/lib/types/result";
 import { ACTIVE_MARKET_INTENTION_STATUS } from "@/lib/marketplace/phase3-states";
 import { parseCreateMarketIntentWithCents } from "@/lib/validations/marketplace";
-
-export type { MarketFeedIntent };
 
 export async function createMarketIntentAction(
   formData: FormData,
