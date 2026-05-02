@@ -41,7 +41,6 @@ import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
 import { AlbumListView } from "@/components/album/album-list-view";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,6 +67,19 @@ const CONF_TAB_ORDER: Confederation[] = [
   "OFC",
   "UEFA",
 ];
+
+/** Texto para `title` / accesibilidad en pestañas de confederación. */
+const CONF_TAB_HINT: Record<Confederation, string> = {
+  AFC: "Figuritas de selecciones · Asia (AFC)",
+  CAF: "Figuritas de selecciones · África (CAF)",
+  CONCACAF: "Norte, Centroamérica y Caribe (Concacaf)",
+  CONMEBOL: "Figuritas de selecciones · Sudamérica",
+  OFC: "Figuritas de selecciones · Oceanía (OFC)",
+  UEFA: "Figuritas de selecciones · Europa (UEFA)",
+};
+
+const albumTabTriggerClass =
+  "max-w-max shrink-0 grow-0 basis-auto rounded-lg px-3 py-2.5 text-xs font-semibold tracking-tight transition-[color,background-color,box-shadow] duration-200 hover:bg-background/55 hover:text-foreground sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm";
 
 function normalizeSearchText(v: string): string {
   return v
@@ -130,17 +142,32 @@ function TeamCollapsible({
   stickers: CatalogStickerDTO[];
   renderCell: (s: CatalogStickerDTO) => ReactNode;
 }) {
+  const n = stickers.length;
   return (
-    <Collapsible defaultOpen className="rounded-lg border">
-      <CollapsibleTrigger className="border-b px-3 py-2 text-sm">
-        <span className="font-medium">
-          {fifaTeamFlagEmoji(team.code)} {team.name}
-        </span>
-        <span className="text-muted-foreground mr-2 text-xs">
-          ({team.code})
+    <Collapsible
+      defaultOpen={false}
+      className="border-border/55 bg-card/35 hover:border-border dark:bg-card/15 overflow-hidden rounded-xl border shadow-sm transition-[box-shadow,background-color] duration-200 hover:shadow-md"
+    >
+      <CollapsibleTrigger className="min-h-12 w-full px-3 py-2.5 text-left sm:min-h-11 sm:px-4">
+        <span className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="text-lg leading-none select-none" aria-hidden>
+            {fifaTeamFlagEmoji(team.code)}
+          </span>
+          <span className="text-foreground min-w-0 flex-1 truncate font-semibold tracking-tight">
+            {team.name}
+          </span>
+          <span
+            className="text-muted-foreground border-border/50 bg-muted/50 inline-flex shrink-0 items-center justify-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] tabular-nums sm:px-2"
+            title={`${n} figurita${n === 1 ? "" : "s"} en este equipo`}
+          >
+            {n}
+          </span>
+          <span className="text-muted-foreground border-border/45 bg-muted/45 shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide">
+            {team.code}
+          </span>
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="p-2 sm:p-3">
+      <CollapsibleContent className="border-border/40 bg-muted/20 dark:bg-muted/10 border-t p-2 sm:p-3">
         <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
           {stickers.map((s) => (
             <Fragment key={s.id}>{renderCell(s)}</Fragment>
@@ -632,14 +659,6 @@ export function AlbumGrid({
         </div>
       </div>
 
-      {viewMode === "grid" && collected === 0 ? (
-        <EmptyState
-          icon={LayoutGridIcon}
-          title="Tu álbum está vacío"
-          description="Marca tu primera figurita en la cuadrícula o cambia a la vista lista."
-        />
-      ) : null}
-
       {emptySearchHint && viewMode !== "list" ? (
         <div className="border-muted-foreground/35 rounded-xl border border-dashed px-4 py-2">
           {emptySearchHint}
@@ -666,20 +685,23 @@ export function AlbumGrid({
         )
       ) : (
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-          <div className="bg-muted/40 max-w-full overflow-x-auto rounded-lg p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <TabsList
-              variant="line"
-              className="flex h-auto min-w-max flex-nowrap gap-0 px-0"
-            >
+          <div
+            className="border-border/50 bg-muted/45 max-w-full scroll-px-3 overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] sm:scroll-px-0 sm:[scrollbar-width:none] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 sm:[&::-webkit-scrollbar]:hidden"
+            role="region"
+            aria-label="Secciones del álbum"
+          >
+            <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
               <TabsTrigger
                 value="tournament"
-                className="shrink-0 px-3 text-xs sm:text-sm"
+                title="Figuritas del torneo (1–15)"
+                className={albumTabTriggerClass}
               >
                 Torneo
               </TabsTrigger>
               <TabsTrigger
                 value="specials"
-                className="shrink-0 px-3 text-xs sm:text-sm"
+                title="Figuritas especiales"
+                className={albumTabTriggerClass}
               >
                 Especiales
               </TabsTrigger>
@@ -687,7 +709,8 @@ export function AlbumGrid({
                 <TabsTrigger
                   key={c}
                   value={`conf-${c}`}
-                  className="shrink-0 px-3 text-xs sm:text-sm"
+                  title={CONF_TAB_HINT[c]}
+                  className={albumTabTriggerClass}
                 >
                   {c}
                 </TabsTrigger>

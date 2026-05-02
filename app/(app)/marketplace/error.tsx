@@ -33,6 +33,14 @@ export default function MarketplaceError({
             {error.message}
           </p>
         ) : null}
+        {error.digest ? (
+          <p
+            className="text-muted-foreground bg-muted/30 max-w-xl rounded-xl border px-3 py-2 font-mono text-xs leading-relaxed break-all"
+            role="status"
+          >
+            Digest (soporte / logs): {error.digest}
+          </p>
+        ) : null}
       </header>
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={() => reset()}>
