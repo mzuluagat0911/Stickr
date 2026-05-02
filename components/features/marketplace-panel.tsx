@@ -46,13 +46,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 const scopeHelp =
@@ -66,10 +59,14 @@ function formatPublishedAt(iso: string | null): string {
   if (!iso) return "hace un momento";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "hace un momento";
-  return new Intl.DateTimeFormat(APP_NUMBER_LOCALE, {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(date);
+  try {
+    return new Intl.DateTimeFormat(APP_NUMBER_LOCALE, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return "hace un momento";
+  }
 }
 
 type IntentDialogProps = {
@@ -218,22 +215,24 @@ function IntentDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor={`cur-${kind}`}>Moneda</Label>
-            <Select
+            <select
+              id={`cur-${kind}`}
               value={currency}
-              onValueChange={(v) => setCurrency(v as MarketCurrencyCode)}
               disabled={pending}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCurrency(isMarketCurrency(v) ? v : "USD");
+              }}
+              className={cn(
+                "border-input bg-background text-foreground focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm shadow-sm outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50",
+              )}
             >
-              <SelectTrigger id={`cur-${kind}`} className="w-full rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MARKET_CURRENCY_CODES.map((code) => (
-                  <SelectItem key={code} value={code}>
-                    {`${MARKET_CURRENCY_UI[code].label} · ${MARKET_CURRENCY_UI[code].hint}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {MARKET_CURRENCY_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {`${MARKET_CURRENCY_UI[code].label} · ${MARKET_CURRENCY_UI[code].hint}`}
+                </option>
+              ))}
+            </select>
             <p className="text-muted-foreground text-xs leading-relaxed">
               Valor sugerido según el país en tu perfil; puedes elegir
               cualquiera de estas cuatro monedas.

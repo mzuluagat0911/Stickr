@@ -1,14 +1,18 @@
 "use client";
 
+import { MarketplacePanelBoundary } from "@/components/features/marketplace-panel-boundary";
 import {
   MarketplacePanelClient,
   type MarketplacePanelClientProps,
 } from "@/components/features/marketplace-panel-client";
 
 /**
- * Contenedor cliente del panel. Import estático (sin `next/dynamic` + `ssr:false`)
- * para evitar fallos en producción al hidratar o al cargar el chunk aparte.
+ * Contenedor cliente del panel + boundary por si el árbol Radix/Dialog falla al montar.
  */
 export function MarketplacePanelGate(props: MarketplacePanelClientProps) {
-  return <MarketplacePanelClient {...props} />;
+  return (
+    <MarketplacePanelBoundary>
+      <MarketplacePanelClient {...props} />
+    </MarketplacePanelBoundary>
+  );
 }

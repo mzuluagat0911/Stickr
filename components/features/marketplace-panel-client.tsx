@@ -52,21 +52,33 @@ function parseIntentsJson(raw: string): MarketFeedIntent[] {
 }
 
 export function MarketplacePanelClient(props: MarketplacePanelClientProps) {
+  const intentsJson =
+    typeof props.intentsJson === "string" ? props.intentsJson : "[]";
+  const editionLabel =
+    typeof props.editionLabel === "string" &&
+    props.editionLabel.trim().length > 0
+      ? props.editionLabel.trim()
+      : "PR-International";
+
   const defaultCurrency: MarketCurrencyCode = isMarketCurrency(
     props.defaultCurrency,
   )
     ? props.defaultCurrency
     : "USD";
 
-  const intents = parseIntentsJson(props.intentsJson);
+  const intents = parseIntentsJson(intentsJson);
 
   return (
     <MarketplacePanel
-      editionLabel={props.editionLabel}
+      editionLabel={editionLabel}
       defaultCurrency={defaultCurrency}
       intents={intents}
-      feedError={props.feedError}
-      currentUserId={props.currentUserId}
+      feedError={props.feedError ?? null}
+      currentUserId={
+        typeof props.currentUserId === "string" || props.currentUserId === null
+          ? props.currentUserId
+          : null
+      }
     />
   );
 }
