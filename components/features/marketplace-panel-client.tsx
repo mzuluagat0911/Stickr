@@ -1,28 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-import type { MarketCurrencyCode } from "@/lib/marketplace/currency";
+import { MarketplacePanel } from "@/components/features/marketplace-panel";
+import {
+  isMarketCurrency,
+  type MarketCurrencyCode,
+} from "@/lib/marketplace/currency";
 import type { MarketFeedIntent } from "@/lib/marketplace/types";
-
-const MarketplacePanel = dynamic(
-  () =>
-    import("@/components/features/marketplace-panel").then((m) => ({
-      default: m.MarketplacePanel,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div
-        className="text-muted-foreground rounded-2xl border border-dashed px-4 py-10 text-center text-sm"
-        role="status"
-        aria-live="polite"
-      >
-        Cargando compra/venta…
-      </div>
-    ),
-  },
-);
 
 export type MarketplacePanelClientProps = {
   editionLabel: string;
@@ -33,5 +16,22 @@ export type MarketplacePanelClientProps = {
 };
 
 export function MarketplacePanelClient(props: MarketplacePanelClientProps) {
-  return <MarketplacePanel {...props} />;
+  const defaultCurrency: MarketCurrencyCode = isMarketCurrency(
+    props.defaultCurrency,
+  )
+    ? props.defaultCurrency
+    : "USD";
+
+  const intents: MarketFeedIntent[] = props.intents.map((row) => ({
+    ...row,
+    username: typeof row.username === "string" ? row.username : null,
+  }));
+
+  return (
+    <MarketplacePanel
+      {...props}
+      defaultCurrency={defaultCurrency}
+      intents={intents}
+    />
+  );
 }

@@ -25,6 +25,14 @@ export default function MarketplaceError({
           Algo salió mal al mostrar esta sección. Puedes reintentar o volver al
           álbum.
         </p>
+        {error.message ? (
+          <p
+            className="text-muted-foreground bg-muted/30 max-w-xl rounded-xl border px-3 py-2 font-mono text-xs leading-relaxed break-words"
+            role="status"
+          >
+            {error.message}
+          </p>
+        ) : null}
       </header>
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={() => reset()}>
@@ -34,11 +42,6 @@ export default function MarketplaceError({
           <a href="/album">Ir al álbum</a>
         </Button>
       </div>
-      {process.env.NODE_ENV === "development" && error.message ? (
-        <pre className="bg-muted/50 max-h-40 overflow-auto rounded-xl p-3 text-xs whitespace-pre-wrap">
-          {error.message}
-        </pre>
-      ) : null}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { openMarketplaceThreadAction } from "@/app/actions/messages";
 import { formatMinorCurrency } from "@/lib/format-currency";
 import { formatIntegerEs, APP_NUMBER_LOCALE } from "@/lib/format-numbers";
 import {
+  isMarketCurrency,
   MARKET_CURRENCY_CODES,
   MARKET_CURRENCY_UI,
   type MarketCurrencyCode,
@@ -85,8 +86,12 @@ function IntentDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState<"local_only" | "national">("local_only");
-  const [currency, setCurrency] =
-    useState<MarketCurrencyCode>(suggestedCurrency);
+  const initialCurrency: MarketCurrencyCode = isMarketCurrency(
+    suggestedCurrency,
+  )
+    ? suggestedCurrency
+    : "USD";
+  const [currency, setCurrency] = useState<MarketCurrencyCode>(initialCurrency);
   const [pending, startTransition] = useTransition();
 
   const title = kind === "buy" ? "Quiero comprar" : "Quiero vender";
@@ -401,6 +406,11 @@ export function MarketplacePanel({
               const mine = Boolean(
                 currentUserId && row.userId === currentUserId,
               );
+              const displayUsername =
+                typeof row.username === "string" &&
+                row.username.trim().length > 0
+                  ? row.username.trim()
+                  : "coleccionista";
               return (
                 <li key={row.id}>
                   <Card
@@ -412,7 +422,7 @@ export function MarketplacePanel({
                     <CardHeader className="space-y-2 pb-2">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         <CardTitle className="font-heading min-w-0 text-sm font-semibold tracking-tight sm:text-base">
-                          @{row.username?.trim() || "coleccionista"}
+                          @{displayUsername}
                         </CardTitle>
                         <Badge
                           variant={row.kind === "buy" ? "secondary" : "default"}
