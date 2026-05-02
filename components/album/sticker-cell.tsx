@@ -100,7 +100,13 @@ export function StickerCell({
   const showImage = Boolean(sticker.imageUrl);
 
   return (
-    <div ref={wrapRef} className="relative isolate">
+    <div
+      ref={wrapRef}
+      className={cn(
+        "relative isolate",
+        panelOpen && state === "duplicate" && "z-[80]",
+      )}
+    >
       {state === "missing" && onToggleExchangePriority ? (
         <button
           type="button"
@@ -255,7 +261,7 @@ export function StickerCell({
       {panelOpen && state === "duplicate" ? (
         <div
           className={cn(
-            "bg-popover text-popover-foreground ring-foreground/10 animate-in fade-in-0 zoom-in-95 absolute z-[60] rounded-lg p-2 text-xs shadow-md ring-1",
+            "bg-popover text-popover-foreground ring-foreground/10 animate-in fade-in-0 zoom-in-95 absolute z-[90] rounded-lg p-2 text-xs shadow-lg ring-1",
             "top-full left-1/2 mt-1 w-[min(17.5rem,calc(100vw-1.5rem))] max-w-none -translate-x-1/2",
             "max-h-[min(58dvh,22rem)] overflow-y-auto overscroll-contain sm:left-0 sm:max-h-none sm:w-48 sm:translate-x-0 sm:overflow-visible",
           )}

@@ -35,19 +35,24 @@ export function DiscoverExchangeChatButton({
     <Button
       type="button"
       size="sm"
-      className="w-full rounded-xl text-sm font-medium sm:w-auto"
+      className="max-w-full min-w-0 rounded-xl text-sm font-medium sm:w-auto"
       disabled={pending}
       onClick={openChat}
     >
       {pending ? (
         <>
           <Loader2 className="mr-2 size-4 shrink-0 animate-spin" aria-hidden />
-          Abriendo chat…
+          <span className="min-w-0 truncate">Abriendo chat…</span>
         </>
       ) : (
         <>
           <MessageSquare className="mr-2 size-4 shrink-0" aria-hidden />
-          Proponer intercambio con @{username}
+          <span className="min-w-0 truncate sm:max-w-none">
+            <span className="sm:hidden">Chat con @{username}</span>
+            <span className="hidden sm:inline">
+              Proponer intercambio con @{username}
+            </span>
+          </span>
         </>
       )}
     </Button>
