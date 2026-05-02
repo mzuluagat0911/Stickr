@@ -68,44 +68,22 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { Confederation, Team2026 } from "@/scripts/data/teams-2026";
-import { TEAMS_2026 } from "@/scripts/data/teams-2026";
+import type { Team2026 } from "@/scripts/data/teams-2026";
+import {
+  WORLD_CUP_2026_ALBUM_GROUPS,
+  albumTabIdForTeamCode,
+} from "@/scripts/data/teams-2026";
 
-const CONF_TAB_ORDER: Confederation[] = [
-  "AFC",
-  "CAF",
-  "CONCACAF",
-  "CONMEBOL",
-  "OFC",
-  "UEFA",
-];
-
-/** Texto para `title` / accesibilidad en pestañas de confederación. */
-const CONF_TAB_HINT: Record<Confederation, string> = {
-  AFC: "Figuritas de selecciones · Asia (AFC)",
-  CAF: "Figuritas de selecciones · África (CAF)",
-  CONCACAF: "Norte, Centroamérica y Caribe (Concacaf)",
-  CONMEBOL: "Figuritas de selecciones · Sudamérica",
-  OFC: "Figuritas de selecciones · Oceanía (OFC)",
-  UEFA: "Figuritas de selecciones · Europa (UEFA)",
-};
-
-const CONF_SELECT_LABEL: Record<Confederation, string> = {
-  AFC: "Asia (AFC)",
-  CAF: "África (CAF)",
-  CONCACAF: "Norte y Caribe (Concacaf)",
-  CONMEBOL: "Sudamérica (CONMEBOL)",
-  OFC: "Oceanía (OFC)",
-  UEFA: "Europa (UEFA)",
-};
+/** Figuritas FWC del bloque intro (n.º globales 1–20 en catálogo). */
+const FWC_INTRO_MAX = 20;
 
 const ALBUM_SECTION_OPTIONS: { value: string; label: string }[] = [
-  { value: "tournament", label: "Torneo (figuritas 1–15)" },
-  { value: "specials", label: "Especiales" },
-  ...CONF_TAB_ORDER.map((c) => ({
-    value: `conf-${c}`,
-    label: CONF_SELECT_LABEL[c],
+  { value: "intro", label: "Intro (FWC)" },
+  ...WORLD_CUP_2026_ALBUM_GROUPS.map((g) => ({
+    value: `group-${g.letter}`,
+    label: `Grupo ${g.letter}`,
   })),
+  { value: "museum", label: "Museo (historia)" },
 ];
 
 const albumTabTriggerClass =
@@ -174,30 +152,20 @@ function applyAlbumFilters(
   });
 }
 
-function pickAlbumSearchTab(
-  filtered: CatalogStickerDTO[],
-  teamsByConf: Map<Confederation, Team2026[]>,
-): string | null {
-  const tournament = filtered.filter(
-    (s) =>
-      s.teamCode === "FWC" && s.stickerNumber >= 1 && s.stickerNumber <= 15,
-  );
-  if (tournament.length > 0) return "tournament";
-  const specials = filtered.filter(
-    (s) =>
-      s.teamCode === "FWC" && s.stickerNumber >= 16 && s.stickerNumber <= 83,
-  );
-  if (specials.length > 0) return "specials";
-  const stickerByTeam = new Map<string, CatalogStickerDTO[]>();
+function pickAlbumSearchTab(filtered: CatalogStickerDTO[]): string | null {
   for (const s of filtered) {
-    if (s.teamCode === "FWC") continue;
-    if (!stickerByTeam.has(s.teamCode)) stickerByTeam.set(s.teamCode, []);
-    stickerByTeam.get(s.teamCode)!.push(s);
-  }
-  for (const c of CONF_TAB_ORDER) {
-    const teams = teamsByConf.get(c) ?? [];
-    const any = teams.some((t) => (stickerByTeam.get(t.code) ?? []).length > 0);
-    if (any) return `conf-${c}`;
+    if (
+      s.teamCode === "FWC" &&
+      s.stickerNumber >= 1 &&
+      s.stickerNumber <= FWC_INTRO_MAX
+    ) {
+      return "intro";
+    }
+    if (s.teamCode === "MUSEUM") {
+      return "museum";
+    }
+    const tabId = albumTabIdForTeamCode(s.teamCode);
+    if (tabId) return tabId;
   }
   return null;
 }
@@ -307,7 +275,7 @@ export function AlbumGrid({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const [tab, setTab] = useState("tournament");
+  const [tab, setTab] = useState("intro");
   const [bulkOpen, setBulkOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -329,21 +297,6 @@ export function AlbumGrid({
     staleTime: 60_000,
   });
 
-  const teamsByConf = useMemo(() => {
-    const m = new Map<Confederation, Team2026[]>();
-    for (const c of CONF_TAB_ORDER) m.set(c, []);
-    for (const t of TEAMS_2026) {
-      m.get(t.confederation)!.push(t);
-    }
-    for (const c of CONF_TAB_ORDER) {
-      m.set(
-        c,
-        (m.get(c) ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
-      );
-    }
-    return m;
-  }, []);
-
   const onSearchQueryChange = useCallback(
     (value: string) => {
       setSearchQuery(value);
@@ -356,10 +309,10 @@ export function AlbumGrid({
         userMap,
         wantSet,
       );
-      const next = pickAlbumSearchTab(filtered, teamsByConf);
+      const next = pickAlbumSearchTab(filtered);
       if (next) setTab(next);
     },
-    [catalog, teamSearchBlobs, statusFilter, userMap, wantSet, teamsByConf],
+    [catalog, teamSearchBlobs, statusFilter, userMap, wantSet],
   );
 
   const mutation = useMutation({
@@ -451,30 +404,31 @@ export function AlbumGrid({
 
   const hasSearch = searchQuery.trim().length > 0;
 
-  const tournament = useMemo(
+  const introFwc = useMemo(
     () =>
-      filteredCatalog.filter(
-        (s) =>
-          s.teamCode === "FWC" && s.stickerNumber >= 1 && s.stickerNumber <= 15,
-      ),
+      filteredCatalog
+        .filter(
+          (s) =>
+            s.teamCode === "FWC" &&
+            s.stickerNumber >= 1 &&
+            s.stickerNumber <= FWC_INTRO_MAX,
+        )
+        .sort((a, b) => a.stickerNumber - b.stickerNumber),
     [filteredCatalog],
   );
 
-  const specials = useMemo(
+  const museum = useMemo(
     () =>
-      filteredCatalog.filter(
-        (s) =>
-          s.teamCode === "FWC" &&
-          s.stickerNumber >= 16 &&
-          s.stickerNumber <= 83,
-      ),
+      filteredCatalog
+        .filter((s) => s.teamCode === "MUSEUM")
+        .sort((a, b) => a.stickerNumber - b.stickerNumber),
     [filteredCatalog],
   );
 
   const stickerByTeam = useMemo(() => {
     const m = new Map<string, CatalogStickerDTO[]>();
     for (const s of filteredCatalog) {
-      if (s.teamCode === "FWC") continue;
+      if (s.teamCode === "FWC" || s.teamCode === "MUSEUM") continue;
       if (!m.has(s.teamCode)) m.set(s.teamCode, []);
       m.get(s.teamCode)!.push(s);
     }
@@ -485,19 +439,18 @@ export function AlbumGrid({
   }, [filteredCatalog]);
 
   const orderedIdsForTab = useMemo(() => {
-    if (tab === "tournament") return tournament.map((s) => s.id);
-    if (tab === "specials") return specials.map((s) => s.id);
-    const confLetter = tab.startsWith("conf-")
-      ? (tab.slice(5) as Confederation)
-      : null;
-    if (!confLetter) return [];
-    const teams = teamsByConf.get(confLetter) ?? [];
+    if (tab === "intro") return introFwc.map((s) => s.id);
+    if (tab === "museum") return museum.map((s) => s.id);
+    if (!tab.startsWith("group-")) return [];
+    const letter = tab.slice(6);
+    const group = WORLD_CUP_2026_ALBUM_GROUPS.find((g) => g.letter === letter);
+    if (!group) return [];
     const ids: string[] = [];
-    for (const t of teams) {
+    for (const t of group.teams) {
       for (const s of stickerByTeam.get(t.code) ?? []) ids.push(s.id);
     }
     return ids;
-  }, [tab, tournament, specials, teamsByConf, stickerByTeam]);
+  }, [tab, introFwc, museum, stickerByTeam]);
 
   const validFocusId =
     focusedId !== null && orderedIdsForTab.includes(focusedId)
@@ -794,80 +747,120 @@ export function AlbumGrid({
         >
           <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
             <TabsTrigger
-              value="tournament"
-              title="Figuritas del torneo (1–15)"
+              value="intro"
+              title="Intro Panini (FWC): escudo, trofeo, mascota, sedes (n.º 1–20 en catálogo)"
               className={albumTabTriggerClass}
             >
-              Torneo
+              Intro
             </TabsTrigger>
-            <TabsTrigger
-              value="specials"
-              title="Figuritas especiales"
-              className={albumTabTriggerClass}
-            >
-              Especiales
-            </TabsTrigger>
-            {CONF_TAB_ORDER.map((c) => (
+            {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
               <TabsTrigger
-                key={c}
-                value={`conf-${c}`}
-                title={CONF_TAB_HINT[c]}
+                key={g.letter}
+                value={`group-${g.letter}`}
+                title={`Grupo ${g.letter}: ${g.teams.map((t) => t.name).join(", ")}`}
                 className={albumTabTriggerClass}
               >
-                {c}
+                {g.letter}
               </TabsTrigger>
             ))}
+            <TabsTrigger
+              value="museum"
+              title="Museo / historia (campeones)"
+              className={albumTabTriggerClass}
+            >
+              Museo
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="tournament">
-          {emptySearchHint ? null : tournament.length === 0 ? (
+        <TabsContent value="intro">
+          {emptySearchHint ? null : introFwc.length === 0 ? (
             <p className="text-muted-foreground py-8 text-center text-sm">
-              En esta vista no hay figuritas tournament{" "}
+              No hay figuritas de intro FWC{" "}
               {hasSearch ? "que coincidan con tu búsqueda" : "en este catálogo"}
               .
             </p>
           ) : (
-            <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
-              {tournament.map((s) => renderSticker(s))}
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Bloque inicial Panini (FWC): escudo, trofeo, mascota, balón,
+                sedes anfitrionas y resto del tramo intro según catálogo
+                digital.
+              </p>
+              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
+                {introFwc.map((s) => renderSticker(s))}
+              </div>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="specials">
-          {emptySearchHint ? null : specials.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              No hay specials para mostrar aquí{" "}
-              {hasSearch ? "con ese filtro" : "."}
-            </p>
-          ) : (
-            <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
-              {specials.map((s) => renderSticker(s))}
-            </div>
-          )}
-        </TabsContent>
-
-        {CONF_TAB_ORDER.map((c) => (
-          <TabsContent key={c} value={`conf-${c}`} className="space-y-2">
-            {emptySearchHint ? null : (teamsByConf.get(c) ?? []).every(
+        {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
+          <TabsContent
+            key={g.letter}
+            value={`group-${g.letter}`}
+            className="space-y-3"
+          >
+            {emptySearchHint ? null : g.teams.every(
                 (team) => (stickerByTeam.get(team.code) ?? []).length === 0,
               ) ? (
               <p className="text-muted-foreground py-8 text-center text-sm">
-                Ningún equipo tiene figuritas aquí{" "}
+                Ningún equipo de este grupo tiene figuritas aquí{" "}
                 {hasSearch ? "con tu búsqueda" : "en esta vista"}.
               </p>
             ) : (
-              (teamsByConf.get(c) ?? []).map((team) => (
-                <TeamCollapsible
-                  key={team.code}
-                  team={team}
-                  stickers={stickerByTeam.get(team.code) ?? []}
-                  renderCell={renderSticker}
-                />
-              ))
+              <>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  <span className="text-foreground font-medium">
+                    Grupo {g.letter}
+                  </span>
+                  {": "}
+                  {g.teams
+                    .map((t) => `${fifaTeamFlagEmoji(t.code)} ${t.name}`)
+                    .join(" · ")}
+                </p>
+                <div className="space-y-2">
+                  {g.teams.map((team) => (
+                    <TeamCollapsible
+                      key={team.code}
+                      team={team}
+                      stickers={stickerByTeam.get(team.code) ?? []}
+                      renderCell={renderSticker}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </TabsContent>
         ))}
+
+        <TabsContent value="museum">
+          {emptySearchHint ? null : museum.length === 0 ? (
+            <div className="text-muted-foreground space-y-2 py-8 text-center text-sm leading-relaxed">
+              <p>
+                Este catálogo aún no incluye el bloque Museo (10 figuritas).
+              </p>
+              <p>
+                Ejecutá{" "}
+                <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                  pnpm seed:catalog
+                </code>{" "}
+                contra tu base para cargar n.º 981–990 (MUSEUM).
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                En el álbum Panini, los campeones históricos van al final como
+                FWC9– FWC19 (11 figuritas). Aquí usamos el bloque MUSEUM del
+                catálogo digital (n.º {museum[0]?.stickerNumber ?? "981"}–
+                {museum.at(-1)?.stickerNumber}).
+              </p>
+              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:max-w-md sm:gap-2">
+                {museum.map((s) => renderSticker(s))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       <AlbumBulkDialog

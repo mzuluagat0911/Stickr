@@ -1,4 +1,13 @@
-import { MessageSquare } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  CircleArrowDown,
+  CircleArrowUp,
+  MessageSquare,
+  Store,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 
 import {
   marketplaceCancelIntentFormAction,
@@ -53,8 +62,23 @@ const labelClass =
   "flex items-center gap-2 text-sm leading-none font-medium select-none";
 
 const selectClass = cn(
-  "border-input bg-background text-foreground focus-visible:ring-ring h-10 w-full rounded-xl border px-3 text-sm shadow-sm outline-none focus-visible:ring-2",
+  "border-input bg-background text-foreground focus-visible:ring-ring h-11 w-full rounded-xl border px-3 text-sm shadow-sm outline-none transition-colors focus-visible:ring-2",
 );
+
+function sortIntentsForDisplay(
+  intents: MarketFeedIntent[],
+  currentUserId: string | null,
+): MarketFeedIntent[] {
+  const uid = currentUserId?.trim();
+  return [...intents].sort((a, b) => {
+    const am = Boolean(uid && a.userId === uid);
+    const bm = Boolean(uid && b.userId === uid);
+    if (am !== bm) return am ? -1 : 1;
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta;
+  });
+}
 
 type Props = {
   editionLabel: string;
@@ -67,6 +91,81 @@ type Props = {
   flashErr: string | null;
 };
 
+function FlashMessages({
+  flashOk,
+  flashCancelled,
+  flashErr,
+}: Pick<Props, "flashOk" | "flashCancelled" | "flashErr">) {
+  if (!flashOk && !flashCancelled && !flashErr) return null;
+  return (
+    <div
+      className="border-border/60 bg-card/80 scroll-mt-24 space-y-3 rounded-2xl border p-4 shadow-sm backdrop-blur-sm sm:p-5"
+      role="region"
+      aria-label="Resultado de la última acción"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          Aviso
+        </p>
+        <Link
+          href="/marketplace"
+          className="text-muted-foreground hover:text-foreground inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors"
+        >
+          <X className="size-3.5" aria-hidden />
+          Cerrar
+        </Link>
+      </div>
+      {flashOk ? (
+        <div className="border-primary/20 bg-primary/8 flex gap-3 rounded-xl border px-3 py-3 sm:px-4">
+          <CheckCircle2
+            className="text-primary mt-0.5 size-5 shrink-0"
+            aria-hidden
+          />
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-foreground text-sm leading-snug font-semibold">
+              Publicación creada
+            </p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Ya aparece en ofertas abiertas. Podés seguir publicando o
+              contactar a otros desde la lista.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {flashCancelled ? (
+        <div className="border-muted-foreground/25 bg-muted/40 flex gap-3 rounded-xl border px-3 py-3 sm:px-4">
+          <CheckCircle2
+            className="text-muted-foreground mt-0.5 size-5 shrink-0"
+            aria-hidden
+          />
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-foreground text-sm leading-snug font-semibold">
+              Publicación cancelada
+            </p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Dejó de mostrarse en el listado.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {flashErr ? (
+        <div className="border-destructive/35 bg-destructive/8 flex gap-3 rounded-xl border px-3 py-3 sm:px-4">
+          <AlertCircle
+            className="text-destructive mt-0.5 size-5 shrink-0"
+            aria-hidden
+          />
+          <p
+            role="alert"
+            className="text-destructive min-w-0 text-sm leading-relaxed"
+          >
+            {flashErr}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function IntentPublicationForm({
   kind,
   editionLabel,
@@ -77,21 +176,45 @@ function IntentPublicationForm({
   defaultCurrency: MarketCurrencyCode;
 }) {
   const safeCcy = isMarketCurrency(defaultCurrency) ? defaultCurrency : "USD";
-  const title = kind === "buy" ? "Quiero comprar" : "Quiero vender";
-  const desc =
-    kind === "buy"
-      ? `Número de figurita de tu lista ${editionLabel}; alcance (local o nacional) y el máximo que pagarías.`
-      : `Número de figurita de tu lista ${editionLabel}, alcance y precio de venta.`;
+  const isBuy = kind === "buy";
+  const title = isBuy ? "Quiero comprar" : "Quiero vender";
+  const desc = isBuy
+    ? `Número de figurita de tu lista ${editionLabel}; alcance y el máximo que pagarías.`
+    : `Número de figurita de tu lista ${editionLabel}, alcance y precio de venta.`;
 
   return (
-    <div className="border-border/60 bg-card/40 flex flex-col gap-3 rounded-xl border p-4 sm:p-5">
-      <div className="space-y-1">
-        <h3 className="font-heading text-base font-semibold tracking-tight">
-          {title}
-        </h3>
-        <p className="text-muted-foreground text-xs leading-relaxed sm:text-sm">
-          {desc}
-        </p>
+    <div
+      className={cn(
+        "bg-card/50 flex flex-col gap-3 rounded-2xl border p-4 shadow-sm sm:p-5",
+        isBuy
+          ? "border-l-[3px] border-sky-500/35 border-l-sky-500"
+          : "border-l-[3px] border-emerald-600/35 border-l-emerald-600",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-xl",
+            isBuy
+              ? "bg-sky-500/15 text-sky-700 dark:text-sky-300"
+              : "bg-emerald-600/15 text-emerald-800 dark:text-emerald-300",
+          )}
+          aria-hidden
+        >
+          {isBuy ? (
+            <CircleArrowDown className="size-5" />
+          ) : (
+            <CircleArrowUp className="size-5" />
+          )}
+        </span>
+        <div className="min-w-0 flex-1 space-y-1">
+          <h3 className="font-heading text-base font-semibold tracking-tight">
+            {title}
+          </h3>
+          <p className="text-muted-foreground text-xs leading-relaxed sm:text-sm">
+            {desc}
+          </p>
+        </div>
       </div>
       <form action={marketplaceSubmitIntentFormAction} className="grid gap-3">
         <input type="hidden" name="kind" value={kind} />
@@ -108,7 +231,7 @@ function IntentPublicationForm({
             max={99999}
             required
             placeholder="Ej. 12"
-            className="rounded-xl"
+            className="h-11 rounded-xl"
           />
           <p className="text-muted-foreground text-xs leading-relaxed">
             Mismo número que en el álbum ({editionLabel}).
@@ -150,7 +273,7 @@ function IntentPublicationForm({
         </div>
         <div className="space-y-2">
           <label htmlFor={`price-${kind}`} className={labelClass}>
-            {kind === "buy" ? "Precio máximo a pagar" : "Precio de venta"}
+            {isBuy ? "Precio máximo a pagar" : "Precio de venta"}
           </label>
           <Input
             id={`price-${kind}`}
@@ -159,19 +282,20 @@ function IntentPublicationForm({
             placeholder="Ej. 15.000 o 2500"
             autoComplete="off"
             required
-            className="rounded-xl font-medium tabular-nums"
+            className="h-11 rounded-xl font-medium tabular-nums"
           />
           <p className="text-muted-foreground text-xs leading-relaxed">
             Puntos de miles o coma decimal (ej. 15.000,50).
           </p>
         </div>
-        <div className="flex justify-end pt-1">
+        <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:justify-end">
           <Button
             type="submit"
             size="lg"
-            className="w-full rounded-2xl font-semibold tracking-tight sm:w-auto"
+            variant={isBuy ? "default" : "secondary"}
+            className="w-full rounded-2xl font-semibold tracking-tight sm:w-auto sm:min-w-44"
           >
-            {kind === "buy" ? "Publicar búsqueda" : "Publicar venta"}
+            {isBuy ? "Publicar búsqueda" : "Publicar venta"}
           </Button>
         </div>
       </form>
@@ -189,42 +313,56 @@ export function MarketplaceServerView({
   flashCancelled,
   flashErr,
 }: Props) {
-  return (
-    <div className="space-y-10 md:space-y-14">
-      {(flashOk || flashCancelled || flashErr) && (
-        <div className="space-y-2" role="status">
-          {flashOk ? (
-            <p className="border-primary/25 bg-primary/10 text-foreground rounded-xl border px-4 py-3 text-sm leading-relaxed">
-              Publicación creada correctamente.
-            </p>
-          ) : null}
-          {flashCancelled ? (
-            <p className="border-primary/25 bg-primary/10 text-foreground rounded-xl border px-4 py-3 text-sm leading-relaxed">
-              Publicación cancelada.
-            </p>
-          ) : null}
-          {flashErr ? (
-            <p
-              role="alert"
-              className="border-destructive/30 bg-destructive/10 text-destructive rounded-xl border px-4 py-3 text-sm leading-relaxed"
-            >
-              {flashErr}
-            </p>
-          ) : null}
-        </div>
-      )}
+  const sortedIntents = sortIntentsForDisplay(intents, currentUserId);
 
-      <section className="space-y-4">
+  return (
+    <div className="space-y-10 md:space-y-12">
+      <FlashMessages
+        flashOk={flashOk}
+        flashCancelled={flashCancelled}
+        flashErr={flashErr}
+      />
+
+      <nav
+        className="border-border/50 bg-muted/30 -mx-1 flex flex-wrap gap-2 rounded-xl border px-3 py-2.5 sm:mx-0 sm:px-4"
+        aria-label="Atajos en la página"
+      >
+        <span className="text-muted-foreground w-full text-[11px] font-medium tracking-wide uppercase sm:w-auto sm:py-1">
+          Ir a
+        </span>
+        <a
+          href="#publicar"
+          className="bg-background/90 text-foreground ring-border/60 hover:bg-muted inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm ring-1 transition-colors"
+        >
+          Nueva publicación
+        </a>
+        <a
+          href="#ofertas"
+          className="bg-background/90 text-foreground ring-border/60 hover:bg-muted inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium shadow-sm ring-1 transition-colors"
+        >
+          Ofertas abiertas
+        </a>
+      </nav>
+
+      <section
+        id="publicar"
+        className="scroll-mt-24 space-y-4"
+        aria-labelledby="heading-publicar"
+      >
         <div className="max-w-xl space-y-1.5">
-          <h2 className="font-heading text-lg font-semibold tracking-tight md:text-xl">
+          <h2
+            id="heading-publicar"
+            className="font-heading text-lg font-semibold tracking-tight md:text-xl"
+          >
             Nueva publicación
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed md:text-[0.9375rem] md:leading-snug">
-            Publica lo que buscas u ofreces; el acuerdo y el pago quedan fuera
-            de Stickr por ahora (sin escrow en esta fase).
+            Completá un formulario y enviá: la página se actualiza sola. El
+            acuerdo y el pago siguen fuera de Stickr en esta fase (sin depósito
+            en la app).
           </p>
         </div>
-        <div className="border-border/70 bg-muted/25 rounded-2xl border p-4 shadow-sm sm:p-5 md:p-6">
+        <div className="border-border/70 bg-muted/20 rounded-2xl border p-4 shadow-sm sm:p-5 md:p-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <IntentPublicationForm
               kind="buy"
@@ -237,21 +375,31 @@ export function MarketplaceServerView({
               defaultCurrency={defaultCurrency}
             />
           </div>
-          <p className="text-muted-foreground mt-3 text-xs leading-relaxed">
-            Tras enviar, la página se recarga sola. Si algo falla, verás el
-            mensaje arriba.
+          <p className="text-muted-foreground mt-4 flex items-start gap-2 border-t border-dashed pt-4 text-xs leading-relaxed">
+            <span className="text-foreground/70 mt-0.5 font-mono text-[10px]">
+              ↵
+            </span>
+            Tip: en móvil podés usar números simples y coma para decimales (ej.{" "}
+            <span className="tabular-nums">15,5</span>).
           </p>
         </div>
       </section>
 
-      <section className="space-y-4 md:space-y-5">
+      <section
+        id="ofertas"
+        className="scroll-mt-24 space-y-4 md:space-y-5"
+        aria-labelledby="heading-ofertas"
+      >
         <div className="max-w-xl space-y-1.5">
-          <h2 className="font-heading text-lg font-semibold tracking-tight md:text-xl">
+          <h2
+            id="heading-ofertas"
+            className="font-heading text-lg font-semibold tracking-tight md:text-xl"
+          >
             Ofertas abiertas
           </h2>
           <p className="text-muted-foreground text-sm leading-relaxed md:text-[0.9375rem] md:leading-snug">
-            Orden cronológico. Los precios reflejan intenciones, no están
-            ejecutados dentro de Stickr.
+            Lo más reciente primero; tus publicaciones aparecen arriba si estás
+            identificado.
           </p>
         </div>
 
@@ -262,16 +410,23 @@ export function MarketplaceServerView({
           >
             {feedError}
           </p>
-        ) : intents.length === 0 ? (
+        ) : sortedIntents.length === 0 ? (
           <Card className="border-border/80 bg-muted/15 rounded-2xl border-dashed shadow-none">
-            <CardContent className="text-muted-foreground px-6 py-12 text-center text-sm leading-relaxed">
-              Todavía no hay compras ni ventas publicadas. Sé el primero con los
-              formularios de arriba.
+            <CardContent className="text-muted-foreground flex flex-col items-center gap-3 px-6 py-14 text-center text-sm leading-relaxed">
+              <span className="bg-muted flex size-14 items-center justify-center rounded-2xl">
+                <Store className="text-muted-foreground size-7" aria-hidden />
+              </span>
+              <div className="space-y-1">
+                <p className="text-foreground font-medium">
+                  Todavía no hay ofertas
+                </p>
+                <p>Sé el primero publicando una búsqueda o una venta arriba.</p>
+              </div>
             </CardContent>
           </Card>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:gap-5">
-            {intents.map((row) => {
+            {sortedIntents.map((row) => {
               const stickerNum = Number(row.stickerNumber);
               const priceCents = Number(row.priceCents);
               const mine = Boolean(
@@ -286,8 +441,9 @@ export function MarketplaceServerView({
                 <li key={row.id}>
                   <Card
                     className={cn(
-                      "border-border/70 rounded-2xl shadow-sm transition-shadow hover:shadow-md",
-                      mine && "ring-primary/25 ring-2",
+                      "border-border/70 flex h-full flex-col rounded-2xl shadow-sm transition-[box-shadow,transform] duration-200 hover:shadow-md",
+                      mine &&
+                        "ring-primary/30 border-primary/20 bg-primary/[0.03] ring-2",
                     )}
                   >
                     <CardHeader className="space-y-2 pb-2">
@@ -295,10 +451,23 @@ export function MarketplaceServerView({
                         <CardTitle className="font-heading min-w-0 text-sm font-semibold tracking-tight sm:text-base">
                           @{displayUsername}
                         </CardTitle>
+                        {mine ? (
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-[11px]"
+                          >
+                            Tuya
+                          </Badge>
+                        ) : null}
                         <Badge
                           variant={row.kind === "buy" ? "secondary" : "default"}
-                          className="rounded-full px-2 py-0.5 text-[11px] capitalize sm:text-xs"
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] capitalize sm:text-xs"
                         >
+                          {row.kind === "buy" ? (
+                            <CircleArrowDown className="size-3" aria-hidden />
+                          ) : (
+                            <CircleArrowUp className="size-3" aria-hidden />
+                          )}
                           {row.kind === "buy" ? "Busca comprar" : "Vende"}
                         </Badge>
                         <Badge
@@ -310,53 +479,58 @@ export function MarketplaceServerView({
                       </div>
                       <CardDescription className="text-muted-foreground text-xs leading-snug sm:text-[0.8125rem]">
                         Figurita n.º{" "}
-                        <span className="text-foreground font-medium tracking-tight tabular-nums">
+                        <span className="text-foreground font-semibold tracking-tight tabular-nums">
                           {formatIntegerEs(
                             Number.isFinite(stickerNum) ? stickerNum : 0,
                           )}
                         </span>{" "}
-                        · {scopeLabel(row.shippingScope)} · Catálogo{" "}
-                        {row.albumEdition}
+                        · {scopeLabel(row.shippingScope)} ·{" "}
+                        <span className="text-foreground/90">
+                          {row.albumEdition}
+                        </span>
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2 pb-4">
-                      <p className="text-foreground text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
-                        {row.kind === "buy"
-                          ? `Hasta ${formatMinorCurrency(
-                              Number.isFinite(priceCents) ? priceCents : 0,
-                              row.currency,
-                            )}`
-                          : formatMinorCurrency(
-                              Number.isFinite(priceCents) ? priceCents : 0,
-                              row.currency,
-                            )}
-                      </p>
-                      <p className="text-muted-foreground text-xs tabular-nums">
+                    <CardContent className="flex flex-1 flex-col space-y-2 pb-4">
+                      <div className="bg-muted/50 rounded-xl px-3 py-2.5">
+                        <p className="text-foreground text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
+                          {row.kind === "buy"
+                            ? `Hasta ${formatMinorCurrency(
+                                Number.isFinite(priceCents) ? priceCents : 0,
+                                row.currency,
+                              )}`
+                            : formatMinorCurrency(
+                                Number.isFinite(priceCents) ? priceCents : 0,
+                                row.currency,
+                              )}
+                        </p>
+                      </div>
+                      <p className="text-muted-foreground mt-auto text-xs tabular-nums">
                         Publicado {formatPublishedAt(row.createdAt)}
                       </p>
                     </CardContent>
                     {mine ? (
-                      <CardFooter className="border-border/50 border-t pt-3 pb-4">
+                      <CardFooter className="border-border/50 mt-auto border-t pt-3 pb-4">
                         <form action={marketplaceCancelIntentFormAction}>
                           <input type="hidden" name="intentId" value={row.id} />
                           <Button
                             type="submit"
                             variant="outline"
                             size="sm"
-                            className="text-muted-foreground rounded-xl text-xs font-medium sm:text-sm"
+                            className="text-destructive hover:bg-destructive/10 border-destructive/30 rounded-xl text-xs font-medium sm:text-sm"
                           >
-                            Cancelar mi publicación
+                            Cancelar publicación
                           </Button>
                         </form>
                       </CardFooter>
                     ) : (
-                      <CardFooter className="border-border/50 flex flex-wrap gap-2 border-t pt-3 pb-4">
+                      <CardFooter className="border-border/50 mt-auto flex flex-wrap gap-2 border-t pt-3 pb-4">
                         <form action={marketplaceOpenThreadFormAction}>
                           <input type="hidden" name="intentId" value={row.id} />
                           <Button
                             type="submit"
+                            variant="default"
                             size="sm"
-                            className="rounded-xl text-xs font-medium sm:text-sm"
+                            className="rounded-xl text-xs font-medium shadow-sm sm:text-sm"
                           >
                             <MessageSquare
                               className="mr-2 size-3.5 shrink-0"

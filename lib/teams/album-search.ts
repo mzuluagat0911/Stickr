@@ -1,6 +1,9 @@
 import type { CatalogStickerDTO } from "@/lib/album/types";
 import type { Confederation } from "@/scripts/data/teams-2026";
-import { TEAMS_2026 } from "@/scripts/data/teams-2026";
+import {
+  TEAMS_2026,
+  WORLD_CUP_2026_ALBUM_GROUPS,
+} from "@/scripts/data/teams-2026";
 
 /** Igual que en el álbum: minúsculas y sin acentos para comparar búsqueda. */
 export function normalizeAlbumSearchText(v: string): string {
@@ -75,9 +78,22 @@ const TEAM_SEARCH_ALIASES: Partial<Record<string, string>> = {
 };
 
 const FWC_SEARCH_EXTRA =
-  "fwc fifa world cup copa mundial torneo especiales especiales panini";
+  "fwc fifa world cup copa mundial torneo especiales especiales panini intro";
+
+const MUSEUM_SEARCH_EXTRA =
+  "museum museo historia campeones historicos legendary gold panini";
 
 let cachedTeamBlobs: ReadonlyMap<string, string> | null = null;
+
+function albumGroupSearchHint(teamCode: string): string {
+  const up = teamCode.toUpperCase();
+  for (const g of WORLD_CUP_2026_ALBUM_GROUPS) {
+    if (g.teams.some((t) => t.code === up)) {
+      return `grupo ${g.letter} group ${g.letter} fase grupos`;
+    }
+  }
+  return "";
+}
 
 export function getTeamSearchBlobMap(): ReadonlyMap<string, string> {
   if (cachedTeamBlobs) return cachedTeamBlobs;
@@ -85,12 +101,14 @@ export function getTeamSearchBlobMap(): ReadonlyMap<string, string> {
   for (const t of TEAMS_2026) {
     const aliases = TEAM_SEARCH_ALIASES[t.code] ?? "";
     const conf = CONFEDERATION_SEARCH[t.confederation];
-    const raw = [t.code, t.name, aliases, t.confederation, conf]
+    const groupHint = albumGroupSearchHint(t.code);
+    const raw = [t.code, t.name, aliases, t.confederation, conf, groupHint]
       .filter(Boolean)
       .join(" ");
     m.set(t.code, normalizeAlbumSearchText(raw));
   }
   m.set("FWC", normalizeAlbumSearchText(`FWC ${FWC_SEARCH_EXTRA}`));
+  m.set("MUSEUM", normalizeAlbumSearchText(`MUSEUM ${MUSEUM_SEARCH_EXTRA}`));
   cachedTeamBlobs = m;
   return m;
 }

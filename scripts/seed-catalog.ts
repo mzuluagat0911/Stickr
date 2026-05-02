@@ -2,10 +2,10 @@
  * Seed idempotente del catálogo Panini Mundial 2026 (edición PR-International).
  *
  * Supuestos (confirmar con el álbum / checklist oficial Panini):
- * - El álbum tiene 980 figuritas. La suma 15 (tournament) + 68 (specials) + 960 (48×20) = 1043,
- *   por lo que NO cierra con 980. Usamos en su lugar:
- *   - Números 1–20: bloque "álbum / FIFA" (`team_code` FWC), sin inventar nombres.
- *   - Números 21–980: 48 selecciones × 20 figuritas (escudo, foto grupal, 18 slots de jugador).
+ * - Total **990** figuritas: 20 intro FWC + 48×20 selecciones + 10 bloque Museo (`MUSEUM`).
+ *   - Números 1–20: intro (`team_code` FWC).
+ *   - Números 21–980: 48 selecciones × 20 (orden = álbum Panini 2026, `teams-2026.ts`).
+ *   - Números 981–990: museo / historia (`team_code` MUSEUM).
  * - Solo 5 figuritas en 16–20 llevan tipo special_* en este modelo; el resto de "specials"
  *   del álbum real (hasta ~68) se pueden recortar después con un UPDATE por rangos de
  *   `sticker_number` o una migración de datos cuando tengamos el PDF oficial.
@@ -27,12 +27,15 @@ import { TEAMS_2026 } from "./data/teams-2026";
 config({ path: path.resolve(process.cwd(), ".env.local") });
 
 const ALBUM_EDITION = "PR-International";
-/** Prefijo alineado a 980 total: 20 + 48×20 = 980 */
 const PREFIX_MAX = 20;
 const TEAM_START = 21;
-const TOTAL_STICKERS = 980;
+const MUSEUM_COUNT = 10;
+const MUSEUM_START = 981;
+/** 20 (FWC) + 960 (48×20) + 10 (MUSEUM) */
+const TOTAL_STICKERS = 990;
 const STICKERS_PER_TEAM = 20;
 const FWC = "FWC";
+const MUSEUM = "MUSEUM";
 
 type PostgresErrorCause = { code?: string };
 
@@ -108,11 +111,25 @@ function buildAllRows(): CatalogRow[] {
     }
   }
 
+  for (let i = 0; i < MUSEUM_COUNT; i++) {
+    const stickerNum = MUSEUM_START + i;
+    const type: CatalogRow["type"] =
+      i % 2 === 0 ? "special_legendary" : "special_gold";
+    rows.push({
+      id: stickerId(stickerNum),
+      albumEdition: ALBUM_EDITION,
+      stickerNumber: stickerNum,
+      teamCode: MUSEUM,
+      positionInTeam: i,
+      type,
+      playerName: null,
+      playerPosition: null,
+      imageUrl: null,
+    });
+  }
+
   if (rows.length !== TOTAL_STICKERS) {
     throw new Error(`Filas generadas ${rows.length} !== ${TOTAL_STICKERS}`);
-  }
-  if (n - 1 !== TOTAL_STICKERS) {
-    throw new Error(`Último número esperado ${TOTAL_STICKERS}, fue ${n - 1}`);
   }
   return rows;
 }
@@ -263,14 +280,14 @@ async function main(): Promise<void> {
     console.log(`  ${t}: ${byType[t]}`);
   }
 
-  console.log("\nPor equipo (48 + FWC):");
+  console.log("\nPor equipo (48 + FWC + MUSEUM):");
   for (const code of Object.keys(byTeam).sort()) {
     console.log(`  ${code}: ${byTeam[code]}`);
   }
 
   if (totalInDb !== TOTAL_STICKERS) {
     console.warn(
-      "\nAdvertencia: el conteo en DB no coincide con 980. Revisá migraciones, otras ediciones, o permisos.",
+      `\nAdvertencia: el conteo en DB no coincide con ${TOTAL_STICKERS}. Revisá migraciones, otras ediciones, o permisos.`,
     );
   }
 

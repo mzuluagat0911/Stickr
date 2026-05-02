@@ -168,7 +168,7 @@ export default async function ProfilePage() {
             <CardDescription>Faltantes</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">980</p>
+            <p className="text-2xl font-semibold">990</p>
             <p className="text-muted-foreground text-xs">Placeholder</p>
           </CardContent>
         </Card>

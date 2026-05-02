@@ -15,14 +15,14 @@ function redirectMarketError(message: string) {
     message.trim().length > 0
       ? message.trim().slice(0, FLASH_ERR_MAX)
       : "Algo salió mal.";
-  redirect(`/marketplace?err=${encodeURIComponent(m)}`);
+  redirect(`/marketplace?err=${encodeURIComponent(m)}#publicar`);
 }
 
 /** Formulario HTML → publicar intención (compra o venta); resultado vía query en `/marketplace`. */
 export async function marketplaceSubmitIntentFormAction(formData: FormData) {
   const res = await createMarketIntentAction(formData);
   if (res.ok) {
-    redirect("/marketplace?ok=1");
+    redirect("/marketplace?ok=1#ofertas");
   }
   redirectMarketError(res.message);
 }
@@ -32,7 +32,7 @@ export async function marketplaceCancelIntentFormAction(formData: FormData) {
   const intentId = String(formData.get("intentId") ?? "").trim();
   const res = await cancelMarketIntentAction(intentId);
   if (res.ok) {
-    redirect("/marketplace?cancelled=1");
+    redirect("/marketplace?cancelled=1#ofertas");
   }
   redirectMarketError(res.message);
 }
