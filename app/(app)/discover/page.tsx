@@ -91,20 +91,35 @@ export default async function DiscoverPage() {
           Intercambio
         </h1>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed md:text-[0.9375rem] md:leading-snug">
-          Aquí encuentras coleccionistas con sede en la ciudad{" "}
-          <span className="text-foreground font-medium">{city}</span>,{" "}
+          Coleccionistas en{" "}
+          <span className="text-foreground font-medium">{city}</span>
           {countryName ? (
-            <span className="text-foreground font-medium">{countryName}</span>
+            <>
+              ,{" "}
+              <span className="text-foreground font-medium">{countryName}</span>
+            </>
           ) : (
-            countryCode
+            <> ({countryCode})</>
           )}
-          , para coordinar cambios cara a cara o por tus medios de contacto. Las
-          tarjetas con más coincidencia van primero: repetidas que tú necesitas
-          (lo que falta o marcaste con prioridad en el álbum). Cuando hay
-          cruces, podés abrir un chat para coordinar el intercambio. Los
-          porcentajes siguen la edición de cada persona. No mostramos perfiles
-          con el álbum en privado.
+          . Las tarjetas van ordenadas por qué tan bien encajan sus repetidas
+          con tus faltas y prioridades del álbum.
         </p>
+        <details className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
+          <summary className="text-primary hover:text-primary/90 cursor-pointer list-none py-1 text-xs font-medium underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
+            Más detalles sobre esta vista
+          </summary>
+          <div className="border-border/60 mt-2 space-y-2 border-l-2 pl-3 text-xs leading-relaxed md:text-[0.8125rem]">
+            <p>
+              Podés coordinar cambios cara a cara o por los medios de contacto
+              que cada uno configure en el perfil. Cuando hay cruces claros, el
+              botón abre un chat solo para intercambio (no marketplace).
+            </p>
+            <p>
+              Los porcentajes de álbum corresponden a la edición de cada
+              persona. No listamos perfiles con el álbum en modo privado.
+            </p>
+          </div>
+        </details>
       </header>
 
       {!collectors.ok ? (

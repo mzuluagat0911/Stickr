@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import type { SameCityCollector } from "@/lib/discover/same-city";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 type MatchFilter = "all" | "help" | "wish";
 
 export type DiscoverCollectorsListProps = {
@@ -96,100 +98,142 @@ export function DiscoverCollectorsList({
         </p>
       ) : (
         <ul className="grid min-w-0 gap-4 sm:grid-cols-2 lg:gap-5">
-          {filtered.map((c) => (
-            <li key={c.otherUserId} className="max-w-full min-w-0">
-              <Card className="border-border/70 h-full max-w-full overflow-hidden rounded-2xl shadow-sm transition-shadow hover:shadow-md">
-                <CardHeader className="min-w-0 space-y-2 pb-3">
-                  <CardTitle className="font-heading min-w-0 truncate text-lg font-semibold tracking-tight">
-                    @{c.username}
-                  </CardTitle>
-                  {c.matchDistinctHelp > 0 ? (
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-primary text-sm leading-snug font-semibold break-words">
-                        Repetidas que te sirven:{" "}
-                        <span className="tabular-nums">
-                          {formatIntegerEs(c.matchDistinctHelp)}
-                        </span>{" "}
-                        tipos distintos ·{" "}
-                        <span className="tabular-nums">
-                          {formatIntegerEs(c.matchTradableQty)}
-                        </span>{" "}
-                        ejemplares de más disponibles
-                      </p>
-                      {c.wishlistOverlapDistinct > 0 ? (
-                        <p className="text-muted-foreground text-xs break-words">
-                          <span className="text-foreground font-medium tabular-nums">
-                            {formatIntegerEs(c.wishlistOverlapDistinct)}
-                          </span>{" "}
-                          en tu lista prioritaria (⭐ en el álbum)
-                        </p>
+          {filtered.map((c) => {
+            const priorityMatch = c.wishlistOverlapDistinct > 0;
+            const hasExchangeOverlap =
+              c.matchDistinctHelp > 0 || c.wishlistOverlapDistinct > 0;
+
+            return (
+              <li key={c.otherUserId} className="max-w-full min-w-0">
+                <Card
+                  className={cn(
+                    "border-border/70 h-full max-w-full overflow-hidden rounded-2xl shadow-sm transition-shadow hover:shadow-md",
+                    priorityMatch &&
+                      "ring-primary/35 border-primary/25 shadow-md ring-2",
+                    !priorityMatch &&
+                      hasExchangeOverlap &&
+                      "ring-primary/15 ring-1",
+                  )}
+                >
+                  <CardHeader className="min-w-0 space-y-2 pb-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <CardTitle className="font-heading min-w-0 flex-1 truncate text-lg font-semibold tracking-tight">
+                        @{c.username}
+                      </CardTitle>
+                      {priorityMatch ? (
+                        <span className="bg-primary/14 text-primary shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-wide uppercase">
+                          Coincidencia ⭐
+                        </span>
                       ) : null}
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-xs leading-relaxed break-words">
-                      Sin cruces por ahora con tus faltas o prioridades (misma
-                      edición que la tuya y mismas IDs de catálogo).
+                    {hasExchangeOverlap ? (
+                      <div className="min-w-0 space-y-1">
+                        {c.matchDistinctHelp > 0 ? (
+                          <p className="text-primary text-sm leading-snug font-semibold break-words">
+                            Repetidas que te sirven:{" "}
+                            <span className="tabular-nums">
+                              {formatIntegerEs(c.matchDistinctHelp)}
+                            </span>{" "}
+                            tipos distintos ·{" "}
+                            <span className="tabular-nums">
+                              {formatIntegerEs(c.matchTradableQty)}
+                            </span>{" "}
+                            ejemplares de más disponibles
+                          </p>
+                        ) : (
+                          <p className="text-primary text-sm leading-snug font-semibold break-words">
+                            Hay cruces con figuritas que marcaste como prioridad
+                            en el álbum.
+                          </p>
+                        )}
+                        {c.wishlistOverlapDistinct > 0 ? (
+                          <p className="text-muted-foreground text-xs break-words">
+                            <span className="text-foreground font-medium tabular-nums">
+                              {formatIntegerEs(c.wishlistOverlapDistinct)}
+                            </span>{" "}
+                            en tu lista prioritaria (⭐ en el álbum)
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-xs leading-relaxed break-words">
+                        Sin cruces por ahora con tus faltas o prioridades (misma
+                        edición que la tuya y mismas IDs de catálogo).
+                      </p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="min-w-0 space-y-4 text-sm">
+                    <dl className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
+                      <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
+                        <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
+                          Álbum
+                        </dt>
+                        <dd className="text-muted-foreground text-base font-semibold tracking-tight sm:text-lg">
+                          <span className="text-foreground tabular-nums">
+                            {formatDecimalEs(c.albumPercent, 1)}
+                          </span>
+                          {" % lleno"}
+                        </dd>
+                      </div>
+                      <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
+                        <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
+                          Repetidas
+                        </dt>
+                        <dd className="text-base leading-tight tracking-tight sm:text-lg">
+                          <span className="text-foreground tabular-nums">
+                            {formatIntegerEs(c.duplicateDistinct)}
+                          </span>{" "}
+                          <span className="text-muted-foreground text-[0.8125rem] leading-snug font-normal">
+                            figurita{c.duplicateDistinct === 1 ? "" : "s"}
+                          </span>
+                        </dd>
+                      </div>
+                      <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
+                        <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
+                          Para cambiar
+                        </dt>
+                        <dd className="text-base leading-tight tracking-tight sm:text-lg">
+                          <span className="text-foreground tabular-nums">
+                            {formatIntegerEs(c.duplicatesForTrade)}
+                          </span>{" "}
+                          <span className="text-muted-foreground text-[0.8125rem] leading-snug font-normal">
+                            ejemplar{c.duplicatesForTrade === 1 ? "" : "es"} de
+                            más
+                          </span>
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="text-muted-foreground border-border/60 border-t pt-3 text-xs leading-relaxed break-words">
+                      Coordina reuniones por los canales configurados cuando
+                      haya confianza mutua; en esta vista solo ves datos
+                      públicos para orientarte.
                     </p>
-                  )}
-                </CardHeader>
-                <CardContent className="min-w-0 space-y-4 text-sm">
-                  <dl className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
-                    <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
-                      <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
-                        Álbum
-                      </dt>
-                      <dd className="text-muted-foreground text-base font-semibold tracking-tight sm:text-lg">
-                        <span className="text-foreground tabular-nums">
-                          {formatDecimalEs(c.albumPercent, 1)}
-                        </span>
-                        {" % lleno"}
-                      </dd>
-                    </div>
-                    <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
-                      <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
-                        Repetidas
-                      </dt>
-                      <dd className="text-base leading-tight tracking-tight sm:text-lg">
-                        <span className="text-foreground tabular-nums">
-                          {formatIntegerEs(c.duplicateDistinct)}
-                        </span>{" "}
-                        <span className="text-muted-foreground text-[0.8125rem] leading-snug font-normal">
-                          figurita{c.duplicateDistinct === 1 ? "" : "s"}
-                        </span>
-                      </dd>
-                    </div>
-                    <div className="bg-muted/50 min-w-0 rounded-xl px-3 py-2.5 sm:px-3.5">
-                      <dt className="text-muted-foreground mb-1 text-[0.6875rem] font-medium tracking-wide uppercase">
-                        Para cambiar
-                      </dt>
-                      <dd className="text-base leading-tight tracking-tight sm:text-lg">
-                        <span className="text-foreground tabular-nums">
-                          {formatIntegerEs(c.duplicatesForTrade)}
-                        </span>{" "}
-                        <span className="text-muted-foreground text-[0.8125rem] leading-snug font-normal">
-                          ejemplar{c.duplicatesForTrade === 1 ? "" : "es"} de
-                          más
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
-                  <p className="text-muted-foreground border-border/60 border-t pt-3 text-xs leading-relaxed break-words">
-                    Coordina reuniones por los canales configurados cuando haya
-                    confianza mutua; en esta vista solo ves datos públicos para
-                    orientarte.
-                  </p>
-                </CardContent>
-                {c.matchDistinctHelp > 0 || c.wishlistOverlapDistinct > 0 ? (
-                  <CardFooter className="border-border/50 flex min-w-0 flex-col gap-2 border-t pt-4 pb-4 sm:flex-row sm:items-center">
-                    <DiscoverExchangeChatButton
-                      otherUserId={c.otherUserId}
-                      username={c.username?.trim() || "coleccionista"}
-                    />
+                  </CardContent>
+                  <CardFooter
+                    className={cn(
+                      "border-border/50 flex min-w-0 flex-col gap-2 border-t pt-4 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
+                      !hasExchangeOverlap && "sm:justify-end",
+                    )}
+                  >
+                    {hasExchangeOverlap ? (
+                      <DiscoverExchangeChatButton
+                        otherUserId={c.otherUserId}
+                        username={c.username?.trim() || "coleccionista"}
+                      />
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full shrink-0 rounded-xl sm:w-auto"
+                      asChild
+                    >
+                      <Link href="/album">Álbum y prioridades ⭐</Link>
+                    </Button>
                   </CardFooter>
-                ) : null}
-              </Card>
-            </li>
-          ))}
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

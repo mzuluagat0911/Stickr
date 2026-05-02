@@ -12,8 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function MessageComposer({
   conversationId,
+  placeholder = "Escribe tu mensaje…",
 }: {
   conversationId: string;
+  /** Placeholder del campo; útil en chats de intercambio con ejemplos concretos. */
+  placeholder?: string;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -42,7 +45,7 @@ export function MessageComposer({
         name="content"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Escribe tu mensaje…"
+        placeholder={placeholder}
         rows={3}
         maxLength={2000}
         disabled={pending}

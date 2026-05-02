@@ -6,6 +6,7 @@ import {
   type MyMarketReview,
   type MarketDealRow,
 } from "@/components/features/conversation-deal-closure";
+import { ConversationExchangeGuide } from "@/components/features/conversation-exchange-guide";
 import { ConversationMarketOffers } from "@/components/features/conversation-market-offers";
 import {
   conversationMarketLabel,
@@ -132,6 +133,24 @@ export default async function ConversationPage({
     : "Intercambio";
   const peer = row.user_a === user.id ? row.user_b : row.user_a;
 
+  type PeerPublicRow = { username: string | null; city: string | null };
+  let peerUsername = "";
+  let peerCity: string | null = null;
+  const { data: peerRows, error: peerRpcErr } = await supabase.rpc(
+    "get_conversation_peer_public_profile",
+    { p_conversation_id: conversationId },
+  );
+  if (!peerRpcErr && Array.isArray(peerRows) && peerRows.length > 0) {
+    const pr = peerRows[0] as PeerPublicRow;
+    peerUsername = typeof pr.username === "string" ? pr.username.trim() : "";
+    peerCity =
+      typeof pr.city === "string" && pr.city.trim() !== ""
+        ? pr.city.trim()
+        : null;
+  }
+  const peerLabel =
+    peerUsername !== "" ? `@${peerUsername}` : `Usuario (${peer.slice(0, 8)}…)`;
+
   let initialOffers: MarketOfferRow[] = [];
   if (row.market_intention_id) {
     const { data: offRows, error: offErr } = await supabase
@@ -181,10 +200,22 @@ export default async function ConversationPage({
           </h1>
           <p className="text-muted-foreground text-xs">
             Con coleccionista ·{" "}
-            <span className="font-mono">{peer.slice(0, 8)}…</span>
+            <span className="text-foreground font-medium">{peerLabel}</span>
+            {peerCity ? (
+              <>
+                {" "}
+                · <span>{peerCity}</span>
+              </>
+            ) : null}
           </p>
         </div>
       </div>
+
+      {!row.market_intention_id ? (
+        <ConversationExchangeGuide
+          peerUsername={peerUsername || "coleccionista"}
+        />
+      ) : null}
 
       {row.market_intention_id ? (
         <ConversationMarketOffers
@@ -208,9 +239,32 @@ export default async function ConversationPage({
 
       <div className="bg-muted/25 border-border/50 flex max-h-[min(55vh,28rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4">
         {messages.length === 0 ? (
-          <p className="text-muted-foreground text-center text-sm">
-            Aún no hay mensajes. Saluda y coordina con respeto.
-          </p>
+          row.market_intention_id ? (
+            <p className="text-muted-foreground text-center text-sm">
+              Aún no hay mensajes. Saluda y coordina con respeto.
+            </p>
+          ) : (
+            <div className="text-muted-foreground mx-auto max-w-sm space-y-3 px-1 text-sm">
+              <p className="text-foreground text-center font-medium">
+                Aún no hay mensajes
+              </p>
+              <p className="text-center text-xs leading-relaxed">
+                Un primer mensaje claro evita malentendidos sobre números de
+                figurita y cantidades.
+              </p>
+              <ul className="marker:text-primary list-inside list-disc space-y-1.5 text-xs leading-relaxed">
+                <li>
+                  Saludá y decí qué buscás u ofrecés (con código si podés).
+                </li>
+                <li>
+                  Confirmá edición del álbum si no está implícito en el código.
+                </li>
+                <li>
+                  Acordá lugar seguro o canal externo solo si ambos quieren.
+                </li>
+              </ul>
+            </div>
+          )
         ) : (
           messages.map((m) => {
             const mine = m.sender_id === user.id;
@@ -246,7 +300,14 @@ export default async function ConversationPage({
         )}
       </div>
 
-      <MessageComposer conversationId={conversationId} />
+      <MessageComposer
+        conversationId={conversationId}
+        placeholder={
+          row.market_intention_id
+            ? undefined
+            : "Ej.: ¿Tenés la PR-INT-142 repetida? Yo te puedo dar…"
+        }
+      />
     </div>
   );
 }

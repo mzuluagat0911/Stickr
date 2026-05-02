@@ -37,6 +37,12 @@ export function DiscoverExchangeChatButton({
       size="sm"
       className="max-w-full min-w-0 rounded-xl text-sm font-medium sm:w-auto"
       disabled={pending}
+      aria-busy={pending}
+      aria-label={
+        pending
+          ? "Abriendo chat de intercambio"
+          : `Proponer intercambio con ${username}`
+      }
       onClick={openChat}
     >
       {pending ? (
