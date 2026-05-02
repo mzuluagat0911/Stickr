@@ -19,10 +19,15 @@ export function formatMinorCurrency(
       : "ARS"
   ) as MarketCurrencyCode;
 
-  return new Intl.NumberFormat(APP_NUMBER_LOCALE, {
-    style: "currency",
-    currency: code,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amountCents / 100);
+  const major = Number.isFinite(amountCents) ? amountCents / 100 : 0;
+  try {
+    return new Intl.NumberFormat(APP_NUMBER_LOCALE, {
+      style: "currency",
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(major);
+  } catch {
+    return `${major.toFixed(2)} ${code}`;
+  }
 }

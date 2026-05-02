@@ -25,6 +25,8 @@ function parseIntentsJson(raw: string): MarketFeedIntent[] {
       if (!row || typeof row !== "object") continue;
       const r = row as Record<string, unknown>;
       if (typeof r.id !== "string" || typeof r.userId !== "string") continue;
+      const rawCcy = typeof r.currency === "string" ? r.currency.trim() : "";
+      const currency = isMarketCurrency(rawCcy) ? rawCcy : "ARS";
       out.push({
         id: r.id,
         stickerNumber: Number(r.stickerNumber),
@@ -33,7 +35,7 @@ function parseIntentsJson(raw: string): MarketFeedIntent[] {
         shippingScope:
           r.shippingScope === "national" ? "national" : "local_only",
         priceCents: Number(r.priceCents),
-        currency: typeof r.currency === "string" ? r.currency : "ARS",
+        currency,
         albumEdition:
           typeof r.albumEdition === "string"
             ? r.albumEdition
