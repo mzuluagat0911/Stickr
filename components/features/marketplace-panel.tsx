@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import {
   CircleArrowDown,
   CircleArrowUp,
   Loader2,
   MessageSquare,
+  XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,14 +36,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -70,7 +63,10 @@ function formatPublishedAt(iso: string | null): string {
 
 type OfferKind = "buy" | "sell";
 
-/** Un solo Dialog controlado: dos raíces Radix Dialog en la misma vista suelen romper el montaje en móvil/prod. */
+/**
+ * Modal sin Radix Dialog (overlay HTML + fijo) para evitar fallos de montaje
+ * del paquete `radix-ui` en Compra/venta en algunos entornos.
+ */
 function NewPublicationDialogs({
   editionLabel,
   suggestedCurrency,
@@ -79,6 +75,8 @@ function NewPublicationDialogs({
   suggestedCurrency: MarketCurrencyCode;
 }) {
   const router = useRouter();
+  const titleId = useId();
+  const descId = useId();
   const [active, setActive] = useState<OfferKind | null>(null);
   const [scope, setScope] = useState<"local_only" | "national">("local_only");
   const safeSuggested: MarketCurrencyCode = isMarketCurrency(suggestedCurrency)
@@ -92,6 +90,22 @@ function NewPublicationDialogs({
     setCurrency(safeSuggested);
     setActive(next);
   };
+
+  const close = useCallback(() => setActive(null), []);
+
+  useEffect(() => {
+    if (active === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [active, close]);
 
   const kind = active;
   const title =
@@ -135,25 +149,51 @@ function NewPublicationDialogs({
       </div>
 
       {active !== null ? (
-        <Dialog
-          open
-          onOpenChange={(o) => {
-            if (!o) setActive(null);
-          }}
+        <div
+          className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+          role="presentation"
         >
-          <DialogContent
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+            aria-label="Cerrar formulario"
+            onClick={close}
+          />
+          <div
             key={active}
-            showCloseButton
-            className="gap-6 sm:max-w-lg"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={descId}
+            className="border-border bg-popover text-popover-foreground ring-foreground/10 animate-in fade-in-0 zoom-in-95 relative z-[1] flex max-h-[min(92dvh,40rem)] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-t-2xl border p-4 shadow-xl ring-1 duration-100 sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <DialogHeader className="space-y-2 text-left">
-              <DialogTitle className="font-heading text-xl leading-tight font-semibold tracking-tight md:text-[1.35rem]">
-                {title}
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground text-[0.8125rem] leading-relaxed sm:text-sm">
-                {desc}
-              </DialogDescription>
-            </DialogHeader>
+            <div className="flex items-start justify-between gap-3 border-b pb-3">
+              <div className="min-w-0 flex-1 space-y-2 text-left">
+                <h2
+                  id={titleId}
+                  className="font-heading text-xl leading-tight font-semibold tracking-tight md:text-[1.35rem]"
+                >
+                  {title}
+                </h2>
+                <p
+                  id={descId}
+                  className="text-muted-foreground text-[0.8125rem] leading-relaxed sm:text-sm"
+                >
+                  {desc}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="shrink-0 rounded-lg"
+                onClick={close}
+                aria-label="Cerrar"
+              >
+                <XIcon className="size-4" />
+              </Button>
+            </div>
             <form
               className="grid gap-4"
               onSubmit={(e) => {
@@ -290,7 +330,7 @@ function NewPublicationDialogs({
                   <span className="tabular-nums">4200,50</span>.
                 </p>
               </div>
-              <DialogFooter className="flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+              <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
                 <Button
                   type="submit"
                   size="lg"
@@ -311,10 +351,10 @@ function NewPublicationDialogs({
                     "Publicar venta"
                   )}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
       ) : null}
     </>
   );
