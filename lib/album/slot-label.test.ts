@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { catalogSlotLabel } from "@/lib/album/slot-label";
+import {
+  catalogSlotLabel,
+  catalogStickerDisplayLabel,
+} from "@/lib/album/slot-label";
 import type { CatalogStickerDTO } from "@/lib/album/types";
 
 function dto(
@@ -8,7 +11,7 @@ function dto(
 ): CatalogStickerDTO {
   return {
     id: "PR-INT-99",
-    stickerNumber: 99,
+    stickerNumber: partial.stickerNumber ?? 99,
     teamCode: partial.teamCode,
     positionInTeam: partial.positionInTeam ?? 0,
     type: partial.type ?? "regular",
@@ -18,8 +21,36 @@ function dto(
   };
 }
 
+describe("catalogStickerDisplayLabel", () => {
+  it("selección: código FIFA + ranura 1–20", () => {
+    expect(
+      catalogStickerDisplayLabel(
+        dto({ teamCode: "MEX", positionInTeam: 0, stickerNumber: 601 }),
+      ),
+    ).toBe("MEX 1");
+    expect(
+      catalogStickerDisplayLabel(
+        dto({ teamCode: "MEX", positionInTeam: 12, stickerNumber: 613 }),
+      ),
+    ).toBe("MEX 13");
+  });
+
+  it("FWC y museo: n.º global", () => {
+    expect(
+      catalogStickerDisplayLabel(
+        dto({ teamCode: "FWC", positionInTeam: 0, stickerNumber: 5 }),
+      ),
+    ).toBe("5");
+    expect(
+      catalogStickerDisplayLabel(
+        dto({ teamCode: "MUSEUM", positionInTeam: 2, stickerNumber: 983 }),
+      ),
+    ).toBe("983");
+  });
+});
+
 describe("catalogSlotLabel", () => {
-  it("selección: escudo, grupal, equipo, jugador", () => {
+  it("selección: escudo, grupal, jugador", () => {
     expect(
       catalogSlotLabel(
         dto({ teamCode: "ARG", positionInTeam: 0, type: "team_crest" }),
@@ -27,14 +58,14 @@ describe("catalogSlotLabel", () => {
     ).toBe("Escudo");
     expect(
       catalogSlotLabel(
-        dto({ teamCode: "ARG", positionInTeam: 1, type: "team_photo" }),
+        dto({ teamCode: "ARG", positionInTeam: 12, type: "team_photo" }),
       ),
     ).toBe("Grupal");
     expect(
       catalogSlotLabel(
-        dto({ teamCode: "ARG", positionInTeam: 5, type: "team_photo" }),
+        dto({ teamCode: "ARG", positionInTeam: 1, type: "regular" }),
       ),
-    ).toBe("Equipo");
+    ).toBe("Jugador");
     expect(
       catalogSlotLabel(
         dto({ teamCode: "ARG", positionInTeam: 14, type: "regular" }),

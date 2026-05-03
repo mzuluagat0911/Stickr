@@ -3,7 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CheckIcon, PlusIcon, StarIcon } from "lucide-react";
 
-import { catalogSlotLabel } from "@/lib/album/slot-label";
+import {
+  catalogSlotLabel,
+  catalogStickerDisplayLabel,
+} from "@/lib/album/slot-label";
 import type { CatalogStickerDTO, UserStickerEntryDTO } from "@/lib/album/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -189,9 +192,9 @@ export function StickerCell({
               <div className="flex items-start justify-between gap-0.5">
                 <span
                   id={labelId}
-                  className="text-lg leading-none font-bold sm:text-xl"
+                  className="text-lg leading-none font-bold tracking-tight sm:text-xl"
                 >
-                  {sticker.stickerNumber}
+                  {catalogStickerDisplayLabel(sticker)}
                 </span>
                 {state === "missing" ? (
                   onToggleExchangePriority ? null : (
@@ -224,7 +227,9 @@ export function StickerCell({
           </button>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuLabel>Casilla {sticker.stickerNumber}</ContextMenuLabel>
+          <ContextMenuLabel>
+            Casilla {catalogStickerDisplayLabel(sticker)}
+          </ContextMenuLabel>
           <ContextMenuItem onSelect={onSetHave}>
             Marcar «la tengo»
           </ContextMenuItem>
@@ -256,7 +261,7 @@ export function StickerCell({
             "max-h-[min(58dvh,22rem)] overflow-y-auto overscroll-contain sm:left-0 sm:max-h-none sm:w-48 sm:translate-x-0 sm:overflow-visible",
           )}
           role="dialog"
-          aria-label={`Cantidad repetida ${sticker.stickerNumber}`}
+          aria-label={`Cantidad repetida ${catalogStickerDisplayLabel(sticker)}`}
         >
           <p className="text-muted-foreground mb-1.5 font-medium sm:mb-2">
             Cantidad de figuritas
