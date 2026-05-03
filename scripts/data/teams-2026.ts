@@ -4,7 +4,8 @@
  * `TEAMS_2026` sigue el **orden del álbum Panini FIFA World Cup 2026**
  * (checklist oficial en orden de páginas: checklistinsider.com / listado base
  * abril 2026). Grupos A→L con cuatro selecciones cada uno como en el libro;
- * las figuritas 21–980 del catálogo siguen esa secuencia (20 por equipo).
+ * las figuritas 21–980 del catálogo siguen esa secuencia (20 por equipo: 1 escudo,
+ * 13 grupal, 2–12 y 14–20 jugadores; `id` tipo `MEX01`…`MEX20` en seed).
  *
  * `confederation` se conserva para datos y búsqueda; la UI del álbum agrupa por
  * **Grupo A–L**, no por confederación.

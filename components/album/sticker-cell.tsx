@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CheckIcon, PlusIcon, StarIcon } from "lucide-react";
 
+import { catalogSlotLabel } from "@/lib/album/slot-label";
 import type { CatalogStickerDTO, UserStickerEntryDTO } from "@/lib/album/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -17,17 +18,6 @@ import {
 } from "@/components/ui/context-menu";
 
 export type CellVisualState = "missing" | "have" | "duplicate";
-
-function positionLabel(type: string, playerPosition: string | null): string {
-  switch (type) {
-    case "team_crest":
-      return "Escudo";
-    case "team_photo":
-      return "Grupal";
-    default:
-      return playerPosition?.trim() || "Jugador";
-  }
-}
 
 function resolveVisual(entry: UserStickerEntryDTO | undefined): {
   state: CellVisualState;
@@ -222,7 +212,7 @@ export function StickerCell({
               </div>
               <div className="min-w-0">
                 <p className="text-muted-foreground text-[10px] leading-tight font-medium uppercase sm:text-[11px]">
-                  {positionLabel(sticker.type, sticker.playerPosition)}
+                  {catalogSlotLabel(sticker)}
                 </p>
                 {sticker.playerName ? (
                   <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug font-medium sm:text-xs">

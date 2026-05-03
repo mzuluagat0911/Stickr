@@ -4,13 +4,16 @@
  * Supuestos (confirmar con el álbum / checklist oficial Panini):
  * - Total **990** figuritas: 20 intro FWC + 48×20 selecciones + 10 bloque Museo (`MUSEUM`).
  *   - Números 1–20: intro (`team_code` FWC).
- *   - Números 21–980: 48 selecciones × 20 (orden = álbum Panini 2026, `teams-2026.ts`).
+ *   - Números 21–980: 48 selecciones × 20 (`teams-2026.ts`): por equipo ranura 1 = escudo
+ *     (`team_crest`), ranura 13 = foto grupal (`team_photo`), ranuras 2–12 y 14–20 = jugadores
+ *     (`regular`). `id` = código FIFA (3 letras) + ranura 01–20 (ej. `MEX01`, `ARG13`).
+ *     En conflicto por `sticker_number` no se sobrescribe `id` (FKs con colecciones ya guardadas).
  *   - Números 981–990: museo / historia (`team_code` MUSEUM).
  * - Solo 5 figuritas en 16–20 llevan tipo special_* en este modelo; el resto de "specials"
  *   del álbum real (hasta ~68) se pueden recortar después con un UPDATE por rangos de
  *   `sticker_number` o una migración de datos cuando tengamos el PDF oficial.
  * - Legendary vs gold: alternamos en 16–20; el detalle real va en migración posterior.
- * - `player_name` y `player_position` quedan null en slots de jugador (2–19).
+ * - `player_name` y `player_position` quedan null en slots de jugador.
  *
  * Ejecución: `pnpm seed:catalog` con `DATABASE_URL` o vars `SUPABASE_DB_*`.
  */
@@ -45,6 +48,11 @@ function stickerId(n: number): string {
   return `PR-INT-${n}`;
 }
 
+/** Por selección: código FIFA + ranura 01–20 (p. ej. MEX01 escudo, MEX13 grupal). */
+function teamStickerId(teamCode: string, slot1Based: number): string {
+  return `${teamCode}${String(slot1Based).padStart(2, "0")}`;
+}
+
 function buildPrefixRow(n: number): CatalogRow {
   if (n < 1 || n > PREFIX_MAX) {
     throw new RangeError(`Prefix sticker ${n} out of range`);
@@ -70,18 +78,19 @@ function buildPrefixRow(n: number): CatalogRow {
 
 function buildTeamSticker(
   teamCode: string,
-  n: number,
-  positionInTeam: number,
+  stickerNumber: number,
+  slot1Based: number,
 ): CatalogRow {
+  const positionInTeam = slot1Based - 1;
   let type: CatalogRow["type"];
-  if (positionInTeam === 0) type = "team_crest";
-  else if (positionInTeam === 1) type = "team_photo";
+  if (slot1Based === 1) type = "team_crest";
+  else if (slot1Based === 13) type = "team_photo";
   else type = "regular";
 
   return {
-    id: stickerId(n),
+    id: teamStickerId(teamCode, slot1Based),
     albumEdition: ALBUM_EDITION,
-    stickerNumber: n,
+    stickerNumber,
     teamCode,
     positionInTeam,
     type,
@@ -105,8 +114,8 @@ function buildAllRows(): CatalogRow[] {
 
   let n = TEAM_START;
   for (const team of TEAMS_2026) {
-    for (let pos = 0; pos < STICKERS_PER_TEAM; pos++) {
-      rows.push(buildTeamSticker(team.code, n, pos));
+    for (let slot = 1; slot <= STICKERS_PER_TEAM; slot++) {
+      rows.push(buildTeamSticker(team.code, n, slot));
       n++;
     }
   }
@@ -246,7 +255,6 @@ async function main(): Promise<void> {
       .onConflictDoUpdate({
         target: [stickerCatalog.albumEdition, stickerCatalog.stickerNumber],
         set: {
-          id: sql`excluded.id`,
           teamCode: sql`excluded.team_code`,
           positionInTeam: sql`excluded.position_in_team`,
           type: sql`excluded.type`,
