@@ -191,7 +191,7 @@ function TeamCollapsible({
   return (
     <Collapsible
       defaultOpen={false}
-      className="border-border/55 bg-card/35 hover:border-border dark:bg-card/15 overflow-hidden rounded-xl border shadow-sm transition-[box-shadow,background-color] duration-200 hover:shadow-md"
+      className="border-border/55 bg-card/35 hover:border-border dark:bg-card/15 rounded-xl border shadow-sm transition-[box-shadow,background-color] duration-200 hover:shadow-md"
     >
       <CollapsibleTrigger className="min-h-12 w-full px-3 py-2.5 text-left sm:min-h-11 sm:px-4">
         <span className="flex min-w-0 flex-1 items-center gap-2.5">
