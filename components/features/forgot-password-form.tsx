@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
   }, [state]);
 
   return (
-    <Card className="border-border/80 w-full shadow-lg shadow-black/5">
+    <Card className="w-full border-zinc-200/70 bg-zinc-50/70 shadow-none ring-1 ring-zinc-200/60 dark:border-zinc-700/60 dark:bg-zinc-900/40 dark:ring-zinc-700/50">
       <CardHeader className="space-y-2 pb-2">
         <CardTitle className="text-xl font-semibold tracking-tight">
           Recuperar contraseña
@@ -65,7 +65,7 @@ export function ForgotPasswordForm() {
           <Button
             type="submit"
             size="lg"
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full text-base shadow-md"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[#ff8200] text-base font-semibold text-white shadow-md hover:bg-[#e67300] active:bg-[#cc6600] disabled:opacity-60 dark:bg-[#ff8200] dark:hover:bg-[#e67300]"
             disabled={pending}
           >
             {pending ? (
@@ -80,7 +80,7 @@ export function ForgotPasswordForm() {
           <p className="text-muted-foreground text-center text-sm">
             <Link
               href="/login"
-              className="text-primary hover:text-primary/90 font-medium underline-offset-4 hover:underline"
+              className="font-medium text-[#2b59c3] underline-offset-4 hover:text-[#1e4199] hover:underline dark:text-[#6b93ff]"
             >
               Volver al inicio de sesión
             </Link>

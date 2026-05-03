@@ -43,6 +43,7 @@ import {
   stickerMatchesAlbumSearch,
 } from "@/lib/teams/album-search";
 import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
+import { AlbumPaniniFrame } from "@/components/album/album-panini-frame";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
 import { Button } from "@/components/ui/button";
@@ -547,328 +548,340 @@ export function AlbumGrid({
     ) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mi álbum</h1>
-          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-            <span className="md:hidden">
-              Toca una casilla para avanzar: falta → tengo → repetida. En falta,
-              la estrella arriba a la derecha prioriza para{" "}
-              <Link
-                className="text-foreground font-medium underline-offset-2 hover:underline"
-                href="/discover"
-              >
-                Intercambio
-              </Link>
-              . Exportar va en el panel de abajo.
-            </span>
-            <span className="hidden md:inline">
-              Pulsa para avanzar el estado: falta → la tengo → repetida. Si está
-              repetida, toca la casilla para elegir la cantidad. En falta, la
-              estrella arriba a la derecha prioriza para{" "}
-              <Link
-                className="text-foreground underline-offset-2 hover:underline"
-                href="/discover"
-              >
-                Intercambio
-              </Link>
-              ; también puedes filtrar por «Prioridad» o usar el menú
-              contextual. Exportar faltantes y marcar en lote van en el panel
-              sticky de abajo.
-            </span>
-          </p>
-        </div>
-        <div className="max-w-lg space-y-3">
-          <div className="relative">
-            <Input
-              type="search"
-              autoComplete="off"
-              aria-label="Buscar en el álbum por código o nombre"
-              placeholder="Buscar por número (7), equipo (FWC) o nombre…"
-              value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
-              className={searchQuery.trim() ? "pr-10" : undefined}
-            />
-            {searchQuery.trim() ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 rounded-lg"
-                aria-label="Limpiar búsqueda"
-                onClick={() => onSearchQueryChange("")}
-              >
-                <X className="size-4" />
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-muted-foreground text-xs font-medium">
-              Estado
-            </span>
-            <div className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
-              {(
-                [
-                  ["all", "Todas"],
-                  ["missing", "Faltantes"],
-                  ["priority", "Prioridad"],
-                  ["have", "Tengo"],
-                  ["duplicate", "Repetidas"],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={statusFilter === value ? "secondary" : "outline"}
-                  className="h-9 shrink-0 rounded-full px-3.5 text-xs sm:h-7"
-                  onClick={() =>
-                    setStatusFilter(
-                      value as
-                        | "all"
-                        | "missing"
-                        | "have"
-                        | "duplicate"
-                        | "priority",
-                    )
-                  }
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-30 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1 space-y-2">
-            <p className="text-foreground text-base leading-snug font-medium tracking-tight">
-              Te faltan{" "}
-              <span className="tabular-nums">
-                {formatIntegerEs(stats.missing)}
-              </span>{" "}
-              de{" "}
-              <span className="tabular-nums">
-                {formatIntegerEs(stats.total)}
-              </span>{" "}
-              figuritas para completar el álbum.
-            </p>
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-              <span className="font-semibold">{pctLabel}</span>
-              <span className="text-muted-foreground">
-                {formatIntegerEs(stats.have)} tengo ·{" "}
-                {formatIntegerEs(stats.duplicateStickers)} repetidas ·{" "}
-                {formatIntegerEs(stats.missing)} faltan ·{" "}
-                {formatIntegerEs(stats.total)} total
-              </span>
-            </div>
-            <AlbumProgressBar stats={stats} />
-          </div>
-          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-            <Link href="/discover" className="w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="w-full sm:w-auto"
-              >
-                Ir a Intercambio
-              </Button>
-            </Link>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="border-border bg-background/85 hover:bg-muted hover:text-foreground inline-flex h-7 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-[0_1px_2px_0_rgb(20_30_70_/_0.08)] transition-all duration-200 outline-none sm:w-auto">
-                Exportar y lote
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-52">
-                <DropdownMenuItem onSelect={() => copyMissingDetail()}>
-                  Copiar faltantes (detalle)
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => copyMissingNumbers()}>
-                  Copiar solo números
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => downloadMissingCsv()}>
-                  Descargar CSV
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setBulkOpen(true)}>
-                  Marcar en lote…
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      {emptySearchHint ? (
-        <div className="border-muted-foreground/35 rounded-xl border border-dashed px-4 py-2">
-          {emptySearchHint}
-        </div>
-      ) : null}
-
-      <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <div className="space-y-1.5 md:hidden">
-          <Label
-            htmlFor="album-section-select"
-            className="text-muted-foreground text-xs font-medium"
-          >
-            Sección del álbum
-          </Label>
-          <Select value={tab} onValueChange={setTab}>
-            <SelectTrigger
-              id="album-section-select"
-              className="border-border/60 bg-background h-11 w-full rounded-xl px-3 shadow-sm"
-            >
-              <SelectValue placeholder="Elige una sección" />
-            </SelectTrigger>
-            <SelectContent
-              position="popper"
-              align="start"
-              className="max-h-[min(70vh,22rem)] min-w-[var(--radix-select-trigger-width)]"
-            >
-              {ALBUM_SECTION_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-muted-foreground text-[11px] leading-snug">
-            En pantalla grande también puedes usar las pestañas horizontales.
-          </p>
-        </div>
-
-        <div
-          className="border-border/50 bg-muted/45 hidden max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] md:block md:scroll-px-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 md:[&::-webkit-scrollbar]:hidden"
-          role="region"
-          aria-label="Secciones del álbum (vista ancha)"
-        >
-          <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
-            <TabsTrigger
-              value="intro"
-              title="Intro Panini (FWC): escudo, trofeo, mascota, sedes (n.º 1–20 en catálogo)"
-              className={albumTabTriggerClass}
-            >
-              Intro
-            </TabsTrigger>
-            {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
-              <TabsTrigger
-                key={g.letter}
-                value={`group-${g.letter}`}
-                title={`Grupo ${g.letter}: ${g.teams.map((t) => t.name).join(", ")}`}
-                className={albumTabTriggerClass}
-              >
-                {g.letter}
-              </TabsTrigger>
-            ))}
-            <TabsTrigger
-              value="museum"
-              title="Museo / historia (campeones)"
-              className={albumTabTriggerClass}
-            >
-              Museo
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="intro">
-          {emptySearchHint ? null : introFwc.length === 0 ? (
-            <p className="text-muted-foreground py-8 text-center text-sm">
-              No hay figuritas de intro FWC{" "}
-              {hasSearch ? "que coincidan con tu búsqueda" : "en este catálogo"}
-              .
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Bloque inicial Panini (FWC): escudo, trofeo, mascota, balón,
-                sedes anfitrionas y resto del tramo intro según catálogo
-                digital.
+    <>
+      <AlbumPaniniFrame>
+        <div className="bg-background/75 dark:bg-background/60 max-w-full min-w-0 space-y-6 rounded-2xl border border-zinc-200/55 px-2.5 py-4 shadow-sm ring-1 ring-black/[0.03] backdrop-blur-sm min-[400px]:px-3 sm:rounded-3xl sm:px-5 sm:py-6 sm:shadow-md dark:border-zinc-800/60 dark:ring-white/[0.04]">
+          <div className="space-y-4">
+            <div className="min-w-0">
+              <p className="text-muted-foreground mb-1.5 line-clamp-2 max-w-full text-[0.625rem] leading-snug font-semibold tracking-[0.16em] break-words uppercase sm:line-clamp-none sm:text-[0.6875rem] sm:tracking-[0.2em]">
+                FIFA World Cup 2026 · {edition}
               </p>
-              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
-                {introFwc.map((s) => renderSticker(s))}
+              <h1 className="text-2xl font-black tracking-tight text-balance text-zinc-900 sm:text-3xl dark:text-zinc-50">
+                Mi álbum
+              </h1>
+              <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+                <span className="md:hidden">
+                  Toca una casilla para avanzar: falta → tengo → repetida. En
+                  falta, la estrella arriba a la derecha prioriza para{" "}
+                  <Link
+                    className="text-foreground font-medium underline-offset-2 hover:underline"
+                    href="/discover"
+                  >
+                    Intercambio
+                  </Link>
+                  . Exportar va en el panel de abajo.
+                </span>
+                <span className="hidden md:inline">
+                  Pulsa para avanzar el estado: falta → la tengo → repetida. Si
+                  está repetida, toca la casilla para elegir la cantidad. En
+                  falta, la estrella arriba a la derecha prioriza para{" "}
+                  <Link
+                    className="text-foreground underline-offset-2 hover:underline"
+                    href="/discover"
+                  >
+                    Intercambio
+                  </Link>
+                  ; también puedes filtrar por «Prioridad» o usar el menú
+                  contextual. Exportar faltantes y marcar en lote van en el
+                  panel sticky de abajo.
+                </span>
+              </p>
+            </div>
+            <div className="max-w-lg space-y-3">
+              <div className="relative">
+                <Input
+                  type="search"
+                  autoComplete="off"
+                  aria-label="Buscar en el álbum por código o nombre"
+                  placeholder="Buscar por número (7), equipo (FWC) o nombre…"
+                  value={searchQuery}
+                  onChange={(e) => onSearchQueryChange(e.target.value)}
+                  className={searchQuery.trim() ? "pr-10" : undefined}
+                />
+                {searchQuery.trim() ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-1 h-8 w-8 -translate-y-1/2 rounded-lg"
+                    aria-label="Limpiar búsqueda"
+                    onClick={() => onSearchQueryChange("")}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                ) : null}
               </div>
-            </div>
-          )}
-        </TabsContent>
-
-        {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
-          <TabsContent
-            key={g.letter}
-            value={`group-${g.letter}`}
-            className="space-y-3"
-          >
-            {emptySearchHint ? null : g.teams.every(
-                (team) => (stickerByTeam.get(team.code) ?? []).length === 0,
-              ) ? (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                Ningún equipo de este grupo tiene figuritas aquí{" "}
-                {hasSearch ? "con tu búsqueda" : "en esta vista"}.
-              </p>
-            ) : (
-              <>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  <span className="text-foreground font-medium">
-                    Grupo {g.letter}
-                  </span>
-                  {": "}
-                  {g.teams
-                    .map((t) => `${fifaTeamFlagEmoji(t.code)} ${t.name}`)
-                    .join(" · ")}
-                </p>
-                <div className="space-y-2">
-                  {g.teams.map((team) => (
-                    <TeamCollapsible
-                      key={team.code}
-                      team={team}
-                      stickers={stickerByTeam.get(team.code) ?? []}
-                      renderCell={renderSticker}
-                    />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-muted-foreground text-xs font-medium">
+                  Estado
+                </span>
+                <div className="-mx-1 flex max-w-full gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+                  {(
+                    [
+                      ["all", "Todas"],
+                      ["missing", "Faltantes"],
+                      ["priority", "Prioridad"],
+                      ["have", "Tengo"],
+                      ["duplicate", "Repetidas"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={statusFilter === value ? "secondary" : "outline"}
+                      className="h-9 shrink-0 rounded-full px-3.5 text-xs sm:h-7"
+                      onClick={() =>
+                        setStatusFilter(
+                          value as
+                            | "all"
+                            | "missing"
+                            | "have"
+                            | "duplicate"
+                            | "priority",
+                        )
+                      }
+                    >
+                      {label}
+                    </Button>
                   ))}
                 </div>
-              </>
-            )}
-          </TabsContent>
-        ))}
-
-        <TabsContent value="museum">
-          {emptySearchHint ? null : museum.length === 0 ? (
-            <div className="text-muted-foreground space-y-2 py-8 text-center text-sm leading-relaxed">
-              <p>
-                Este catálogo aún no incluye el bloque Museo (10 figuritas).
-              </p>
-              <p>
-                Ejecutá{" "}
-                <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                  pnpm seed:catalog
-                </code>{" "}
-                contra tu base para cargar n.º 981–990 (MUSEUM).
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                En el álbum Panini, los campeones históricos van al final como
-                FWC9– FWC19 (11 figuritas). Aquí usamos el bloque MUSEUM del
-                catálogo digital (n.º {museum[0]?.stickerNumber ?? "981"}–
-                {museum.at(-1)?.stickerNumber}).
-              </p>
-              <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:max-w-md sm:gap-2">
-                {museum.map((s) => renderSticker(s))}
               </div>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
 
+          <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-30 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-foreground text-base leading-snug font-medium tracking-tight">
+                  Te faltan{" "}
+                  <span className="tabular-nums">
+                    {formatIntegerEs(stats.missing)}
+                  </span>{" "}
+                  de{" "}
+                  <span className="tabular-nums">
+                    {formatIntegerEs(stats.total)}
+                  </span>{" "}
+                  figuritas para completar el álbum.
+                </p>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                  <span className="font-semibold">{pctLabel}</span>
+                  <span className="text-muted-foreground">
+                    {formatIntegerEs(stats.have)} tengo ·{" "}
+                    {formatIntegerEs(stats.duplicateStickers)} repetidas ·{" "}
+                    {formatIntegerEs(stats.missing)} faltan ·{" "}
+                    {formatIntegerEs(stats.total)} total
+                  </span>
+                </div>
+                <AlbumProgressBar stats={stats} />
+              </div>
+              <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                <Link href="/discover" className="w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full sm:w-auto"
+                  >
+                    Ir a Intercambio
+                  </Button>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="border-border bg-background/85 hover:bg-muted hover:text-foreground inline-flex h-7 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-[0_1px_2px_0_rgb(20_30_70_/_0.08)] transition-all duration-200 outline-none sm:w-auto">
+                    Exportar y lote
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-52">
+                    <DropdownMenuItem onSelect={() => copyMissingDetail()}>
+                      Copiar faltantes (detalle)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => copyMissingNumbers()}>
+                      Copiar solo números
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => downloadMissingCsv()}>
+                      Descargar CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setBulkOpen(true)}>
+                      Marcar en lote…
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+
+          {emptySearchHint ? (
+            <div className="border-muted-foreground/35 rounded-xl border border-dashed px-4 py-2">
+              {emptySearchHint}
+            </div>
+          ) : null}
+
+          <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+            <div className="space-y-1.5 md:hidden">
+              <Label
+                htmlFor="album-section-select"
+                className="text-muted-foreground text-xs font-medium"
+              >
+                Sección del álbum
+              </Label>
+              <Select value={tab} onValueChange={setTab}>
+                <SelectTrigger
+                  id="album-section-select"
+                  className="border-border/60 bg-background h-11 w-full rounded-xl px-3 shadow-sm"
+                >
+                  <SelectValue placeholder="Elige una sección" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  align="start"
+                  className="max-h-[min(70vh,22rem)] min-w-[var(--radix-select-trigger-width)]"
+                >
+                  {ALBUM_SECTION_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-[11px] leading-snug">
+                En pantalla grande también puedes usar las pestañas
+                horizontales.
+              </p>
+            </div>
+
+            <div
+              className="border-border/50 bg-muted/45 hidden max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] md:block md:scroll-px-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 md:[&::-webkit-scrollbar]:hidden"
+              role="region"
+              aria-label="Secciones del álbum (vista ancha)"
+            >
+              <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
+                <TabsTrigger
+                  value="intro"
+                  title="Intro Panini (FWC): escudo, trofeo, mascota, sedes (n.º 1–20 en catálogo)"
+                  className={albumTabTriggerClass}
+                >
+                  Intro
+                </TabsTrigger>
+                {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
+                  <TabsTrigger
+                    key={g.letter}
+                    value={`group-${g.letter}`}
+                    title={`Grupo ${g.letter}: ${g.teams.map((t) => t.name).join(", ")}`}
+                    className={albumTabTriggerClass}
+                  >
+                    {g.letter}
+                  </TabsTrigger>
+                ))}
+                <TabsTrigger
+                  value="museum"
+                  title="Museo / historia (campeones)"
+                  className={albumTabTriggerClass}
+                >
+                  Museo
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="intro">
+              {emptySearchHint ? null : introFwc.length === 0 ? (
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  No hay figuritas de intro FWC{" "}
+                  {hasSearch
+                    ? "que coincidan con tu búsqueda"
+                    : "en este catálogo"}
+                  .
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    Bloque inicial Panini (FWC): escudo, trofeo, mascota, balón,
+                    sedes anfitrionas y resto del tramo intro según catálogo
+                    digital.
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
+                    {introFwc.map((s) => renderSticker(s))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            {WORLD_CUP_2026_ALBUM_GROUPS.map((g) => (
+              <TabsContent
+                key={g.letter}
+                value={`group-${g.letter}`}
+                className="space-y-3"
+              >
+                {emptySearchHint ? null : g.teams.every(
+                    (team) => (stickerByTeam.get(team.code) ?? []).length === 0,
+                  ) ? (
+                  <p className="text-muted-foreground py-8 text-center text-sm">
+                    Ningún equipo de este grupo tiene figuritas aquí{" "}
+                    {hasSearch ? "con tu búsqueda" : "en esta vista"}.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      <span className="text-foreground font-medium">
+                        Grupo {g.letter}
+                      </span>
+                      {": "}
+                      {g.teams
+                        .map((t) => `${fifaTeamFlagEmoji(t.code)} ${t.name}`)
+                        .join(" · ")}
+                    </p>
+                    <div className="space-y-2">
+                      {g.teams.map((team) => (
+                        <TeamCollapsible
+                          key={team.code}
+                          team={team}
+                          stickers={stickerByTeam.get(team.code) ?? []}
+                          renderCell={renderSticker}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </TabsContent>
+            ))}
+
+            <TabsContent value="museum">
+              {emptySearchHint ? null : museum.length === 0 ? (
+                <div className="text-muted-foreground space-y-2 py-8 text-center text-sm leading-relaxed">
+                  <p>
+                    Este catálogo aún no incluye el bloque Museo (10 figuritas).
+                  </p>
+                  <p>
+                    Ejecutá{" "}
+                    <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                      pnpm seed:catalog
+                    </code>{" "}
+                    contra tu base para cargar n.º 981–990 (MUSEUM).
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    En el álbum Panini, los campeones históricos van al final
+                    como FWC9– FWC19 (11 figuritas). Aquí usamos el bloque
+                    MUSEUM del catálogo digital (n.º{" "}
+                    {museum[0]?.stickerNumber ?? "981"}–
+                    {museum.at(-1)?.stickerNumber}).
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:max-w-md sm:gap-2">
+                    {museum.map((s) => renderSticker(s))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </AlbumPaniniFrame>
       <AlbumBulkDialog
         open={bulkOpen}
         onOpenChange={setBulkOpen}
         catalogEdition={catalog}
         onCommitted={refreshAlbumQueries}
       />
-    </div>
+    </>
   );
 }
