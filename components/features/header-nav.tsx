@@ -72,7 +72,7 @@ export function HeaderNav({
   if (!user) {
     const signupActive = pathname === "/signup";
     return (
-      <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-20 flex items-center justify-between gap-2 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
+      <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-40 flex items-center justify-between gap-2 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
         <Link
           href="/"
           className="text-foreground shrink-0 text-[17px] font-semibold tracking-[-0.03em]"
@@ -101,7 +101,7 @@ export function HeaderNav({
   const initial = label.slice(0, 2).toUpperCase();
 
   return (
-    <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-20 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
+    <header className="border-border/40 bg-background/72 supports-[backdrop-filter]:bg-background/65 sticky top-0 z-40 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur-xl backdrop-saturate-150">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Link
           href="/album"
