@@ -44,6 +44,7 @@ describe("computeAlbumProgress", () => {
     expect(p.have).toBe(0);
     expect(p.duplicateStickers).toBe(0);
     expect(p.duplicateExtraCopies).toBe(0);
+    expect(p.duplicatePhysicalRepeats).toBe(0);
     expect(p.missing).toBe(3);
     expect(p.percentCollected).toBe(0);
     expect(p.bar.green).toBe(0);
@@ -62,10 +63,13 @@ describe("computeAlbumProgress", () => {
     expect(p.have).toBe(1);
     expect(p.duplicateStickers).toBe(1);
     expect(p.duplicateExtraCopies).toBe(3);
+    expect(p.duplicatePhysicalRepeats).toBe(4);
     expect(p.missing).toBe(1);
     expect(p.percentCollected).toBeCloseTo(2 / 3);
     expect(p.bar.green).toBeCloseTo(1 / 3);
     expect(p.bar.gold).toBeCloseTo(1 / 3);
     expect(p.bar.gray).toBeCloseTo(1 / 3);
+    expect(p.byTeam.FWC.duplicateSlots).toBe(1);
+    expect(p.byTeam.FWC.duplicateExtraCopies).toBe(3);
   });
 });

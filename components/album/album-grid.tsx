@@ -206,6 +206,7 @@ function TeamCollapsible({
   const total = teamSlice?.total ?? stickers.length;
   const have = teamSlice?.have ?? 0;
   const dup = teamSlice?.duplicateSlots ?? 0;
+  const dupExtra = teamSlice?.duplicateExtraCopies ?? 0;
   const missing = teamSlice?.missing ?? Math.max(0, total - have - dup);
   const collected = have + dup;
   const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
@@ -261,7 +262,14 @@ function TeamCollapsible({
                 <>
                   {" · "}
                   <span className="text-amber-800/90 tabular-nums dark:text-amber-300/90">
-                    {formatIntegerEs(dup)} repetida{dup === 1 ? "" : "s"}
+                    {formatIntegerEs(dup + dupExtra)} repetidas
+                    {dupExtra > 0 ? (
+                      <span className="text-amber-900/80 dark:text-amber-200/80">
+                        {" "}
+                        ({formatIntegerEs(dup)} casillas,{" "}
+                        {formatIntegerEs(dupExtra)} de más)
+                      </span>
+                    ) : null}
                   </span>
                 </>
               ) : null}
@@ -762,8 +770,17 @@ export function AlbumGrid({
                   <span className="font-semibold">{pctLabel}</span>
                   <span className="text-zinc-600 dark:text-zinc-400">
                     {formatIntegerEs(stats.have)} tengo ·{" "}
-                    {formatIntegerEs(stats.duplicateStickers)} repetidas ·{" "}
-                    {formatIntegerEs(stats.missing)} faltan ·{" "}
+                    {formatIntegerEs(stats.duplicatePhysicalRepeats)} repetidas
+                    {stats.duplicateStickers > 0 ? (
+                      <>
+                        {" "}
+                        <span className="text-zinc-500 dark:text-zinc-500">
+                          ({formatIntegerEs(stats.duplicateStickers)} casillas,{" "}
+                          {formatIntegerEs(stats.duplicateExtraCopies)} de más)
+                        </span>
+                      </>
+                    ) : null}{" "}
+                    · {formatIntegerEs(stats.missing)} faltan ·{" "}
                     {formatIntegerEs(stats.total)} total
                   </span>
                 </div>

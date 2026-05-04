@@ -89,6 +89,7 @@ export async function GET() {
     have: p.have,
     duplicates: p.duplicateStickers,
     duplicateExtraCopies: p.duplicateExtraCopies,
+    duplicatePhysicalRepeats: p.duplicatePhysicalRepeats,
     missing: p.missing,
     percent: p.percentCollected,
     byTeam: p.byTeam,

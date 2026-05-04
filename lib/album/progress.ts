@@ -4,6 +4,8 @@ export type TeamProgressSlice = {
   total: number;
   have: number;
   duplicateSlots: number;
+  /** Suma de (duplicateCount - 1) en casillas repetidas del equipo */
+  duplicateExtraCopies: number;
   missing: number;
 };
 
@@ -14,6 +16,11 @@ export type AlbumProgressStats = {
   duplicateStickers: number;
   /** Suma de ejemplares extra: cada fila duplicate suma max(0, duplicateCount - 1) */
   duplicateExtraCopies: number;
+  /**
+   * Láminas físicas en estado repetida: suma de `duplicateCount` en esas casillas
+   * (= duplicateStickers + duplicateExtraCopies).
+   */
+  duplicatePhysicalRepeats: number;
   missing: number;
   /** (have + duplicateStickers) / total — al menos una copia en cada casillero */
   percentCollected: number;
@@ -57,6 +64,7 @@ export function computeAlbumProgress(
         total: 0,
         have: 0,
         duplicateSlots: 0,
+        duplicateExtraCopies: 0,
         missing: 0,
       };
     }
@@ -74,12 +82,14 @@ export function computeAlbumProgress(
       duplicateStickers += 1;
       duplicateExtraCopies += st.extra;
       team.duplicateSlots += 1;
+      team.duplicateExtraCopies += st.extra;
     }
   }
 
   const collected = have + duplicateStickers;
   const percentCollected = total > 0 ? collected / total : 0;
-  /** Peso visual: verde = have, dorado = repetidas (1 unidad cada una), gris = falta */
+  const duplicatePhysicalRepeats = duplicateStickers + duplicateExtraCopies;
+  /** Peso visual por casilla: verde = tengo, dorado = repetida (1 por casilla), gris = falta */
   const green = total > 0 ? have / total : 0;
   const gold = total > 0 ? duplicateStickers / total : 0;
   const gray = total > 0 ? missing / total : 0;
@@ -88,6 +98,7 @@ export function computeAlbumProgress(
     have,
     duplicateStickers,
     duplicateExtraCopies,
+    duplicatePhysicalRepeats,
     missing,
     percentCollected,
     byTeam,

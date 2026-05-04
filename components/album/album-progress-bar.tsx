@@ -9,9 +9,9 @@ type AlbumProgressBarProps = {
 export function AlbumProgressBar({ stats, className }: AlbumProgressBarProps) {
   const tip = [
     `${stats.have} tengo`,
-    `${stats.duplicateStickers} repetidas`,
+    `${stats.duplicatePhysicalRepeats} láminas repetidas (${stats.duplicateStickers} casillas)`,
     `${stats.missing} faltan`,
-    `de ${stats.total}`,
+    `de ${stats.total} casillas`,
   ].join(" · ");
 
   return (
@@ -29,7 +29,7 @@ export function AlbumProgressBar({ stats, className }: AlbumProgressBarProps) {
           style={{ width: `${stats.bar.green * 100}%` }}
         />
         <div
-          key={`o-${stats.duplicateStickers}`}
+          key={`o-${stats.duplicateStickers}-${stats.duplicateExtraCopies}`}
           className="h-full bg-amber-400/90 transition-[width] duration-500 ease-out motion-reduce:transition-none"
           style={{ width: `${stats.bar.gold * 100}%` }}
         />
