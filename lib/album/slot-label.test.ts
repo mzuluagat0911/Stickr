@@ -35,17 +35,17 @@ describe("catalogStickerDisplayLabel", () => {
     ).toBe("MEX 13");
   });
 
-  it("FWC y museo: n.º global", () => {
+  it("FWC y museo: código + ranura", () => {
     expect(
       catalogStickerDisplayLabel(
-        dto({ teamCode: "FWC", positionInTeam: 0, stickerNumber: 5 }),
+        dto({ teamCode: "FWC", positionInTeam: 4, stickerNumber: 5 }),
       ),
-    ).toBe("5");
+    ).toBe("FWC 5");
     expect(
       catalogStickerDisplayLabel(
         dto({ teamCode: "MUSEUM", positionInTeam: 2, stickerNumber: 983 }),
       ),
-    ).toBe("983");
+    ).toBe("MUSEUM 3");
   });
 });
 

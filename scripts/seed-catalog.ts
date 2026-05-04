@@ -68,7 +68,7 @@ function buildPrefixRow(n: number): CatalogRow {
     albumEdition: ALBUM_EDITION,
     stickerNumber: n,
     teamCode: FWC,
-    positionInTeam: 0,
+    positionInTeam: n - 1,
     type,
     playerName: null,
     playerPosition: null,

@@ -556,25 +556,19 @@ export function AlbumGrid({
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-none sm:rounded-[1.75rem] md:rounded-[2rem]">
             <AuthWc2026Backdrop />
           </div>
-          <div className="relative z-10 w-full px-2 pt-2 pb-2 sm:px-3 sm:pt-3 sm:pb-3">
-            <div className="w-full max-w-full space-y-6 rounded-[1.5rem] bg-white px-4 py-6 text-zinc-900 shadow-[0_25px_60px_-12px_rgb(0_0_0_/_0.35)] ring-1 ring-black/10 min-[400px]:px-5 sm:rounded-[2rem] sm:px-8 sm:py-8 dark:bg-zinc-950 dark:text-zinc-50 dark:ring-white/10">
+          <div className="relative z-10 w-full px-4 pt-2 pb-8 md:px-6">
+            <div className="space-y-6">
               <div className="space-y-4">
-                <div className="min-w-0">
-                  <p className="mb-1 text-[0.65rem] font-semibold tracking-[0.22em] text-zinc-500 uppercase sm:text-[0.7rem] sm:tracking-[0.28em] dark:text-zinc-400">
-                    Colección digital oficial
-                  </p>
-                  <p className="mb-1.5 text-[0.7rem] font-bold tracking-[0.12em] text-[#d02670] uppercase sm:text-xs dark:text-[#ff6ba8]">
-                    FIFA World Cup 2026 · {edition}
-                  </p>
-                  <h1 className="text-3xl font-black tracking-tight text-balance text-zinc-950 sm:text-4xl dark:text-white">
+                <div>
+                  <h1 className="text-2xl font-semibold tracking-tight">
                     Mi álbum
                   </h1>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
                     <span className="md:hidden">
                       Toca una casilla para avanzar: falta → tengo → repetida.
                       En falta, la estrella arriba a la derecha prioriza para{" "}
                       <Link
-                        className="font-medium text-[#2b59c3] underline-offset-2 hover:text-[#1e4199] hover:underline dark:text-[#6b93ff]"
+                        className="text-foreground font-medium underline-offset-2 hover:underline"
                         href="/discover"
                       >
                         Intercambio
@@ -586,7 +580,7 @@ export function AlbumGrid({
                       Si está repetida, toca la casilla para elegir la cantidad.
                       En falta, la estrella arriba a la derecha prioriza para{" "}
                       <Link
-                        className="font-medium text-[#2b59c3] underline-offset-2 hover:text-[#1e4199] hover:underline dark:text-[#6b93ff]"
+                        className="text-foreground underline-offset-2 hover:underline"
                         href="/discover"
                       >
                         Intercambio
@@ -662,10 +656,10 @@ export function AlbumGrid({
                 </div>
               </div>
 
-              <div className="sticky top-0 z-10 space-y-3 rounded-xl border border-zinc-200/80 bg-white/90 p-4 shadow-sm backdrop-blur-md supports-backdrop-filter:bg-white/85 dark:border-zinc-700/80 dark:bg-zinc-950/90 dark:supports-backdrop-filter:bg-zinc-950/85">
+              <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-10 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1 space-y-2">
-                    <p className="text-base leading-snug font-medium tracking-tight text-zinc-900 dark:text-zinc-50">
+                    <p className="text-foreground text-base leading-snug font-medium tracking-tight">
                       Te faltan{" "}
                       <span className="tabular-nums">
                         {formatIntegerEs(stats.missing)}
@@ -678,7 +672,7 @@ export function AlbumGrid({
                     </p>
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
                       <span className="font-semibold">{pctLabel}</span>
-                      <span className="text-zinc-600 dark:text-zinc-400">
+                      <span className="text-muted-foreground">
                         {formatIntegerEs(stats.have)} tengo ·{" "}
                         {formatIntegerEs(stats.duplicateStickers)} repetidas ·{" "}
                         {formatIntegerEs(stats.missing)} faltan ·{" "}
@@ -689,16 +683,12 @@ export function AlbumGrid({
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:items-end">
                     <Link href="/discover" className="w-full sm:w-auto">
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-9 w-full rounded-full bg-[#ff8200] px-4 text-sm font-semibold text-white shadow-md hover:bg-[#e67300] active:bg-[#cc6600] sm:h-8 sm:w-auto dark:bg-[#ff8200] dark:hover:bg-[#e67300]"
-                      >
+                      <Button type="button" variant="secondary" size="sm">
                         Ir a Intercambio
                       </Button>
                     </Link>
                     <DropdownMenu>
-                      <DropdownMenuTrigger className="inline-flex h-9 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border border-zinc-200/90 bg-zinc-50/90 px-2.5 text-[0.8rem] font-medium text-zinc-800 shadow-sm transition-all duration-200 outline-none hover:bg-zinc-100/90 hover:text-zinc-950 sm:h-8 sm:w-auto dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-100 dark:hover:bg-zinc-800/90">
+                      <DropdownMenuTrigger className="border-border bg-background/85 hover:bg-muted hover:text-foreground inline-flex h-9 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-[0_1px_2px_0_rgb(20_30_70_/_0.08)] transition-all duration-200 outline-none sm:h-8 sm:w-auto">
                         Exportar y lote
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="min-w-52">
@@ -738,7 +728,7 @@ export function AlbumGrid({
                   <Select value={tab} onValueChange={setTab}>
                     <SelectTrigger
                       id="album-section-select"
-                      className="h-11 w-full rounded-xl border-zinc-200/80 bg-zinc-50/90 px-3 shadow-sm dark:border-zinc-600 dark:bg-zinc-900/60"
+                      className="border-border/60 bg-background h-11 w-full rounded-xl px-3 shadow-sm"
                     >
                       <SelectValue placeholder="Elige una sección" />
                     </SelectTrigger>

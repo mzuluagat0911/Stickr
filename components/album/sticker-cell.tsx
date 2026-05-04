@@ -106,7 +106,7 @@ export function StickerCell({
       ref={wrapRef}
       className={cn(
         "relative isolate",
-        /* Por encima del sticky del álbum (z-30) cuando el panel fijo está abierto */
+        /* Por encima del sticky del álbum cuando el panel está abierto */
         panelOpen && state === "duplicate" && "z-[120]",
       )}
     >
