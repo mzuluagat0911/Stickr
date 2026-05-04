@@ -548,9 +548,9 @@ export function AlbumGrid({
 
   return (
     <>
-      {/* isolate + bg opaco: legible sobre el gradiente del body y capas decorativas; no afecta al rail lateral (layout z-20). */}
+      {/* Velo semitransparente: deja ver el WC del layout en márgenes/fondo; tarjetas siguen opacas. */}
       <div
-        className="bg-background relative isolate min-w-0 space-y-6"
+        className="bg-background/82 supports-backdrop-filter:bg-background/75 dark:bg-background/78 dark:supports-backdrop-filter:bg-background/68 relative isolate min-w-0 space-y-6 backdrop-blur-sm"
         data-page="album"
       >
         <div className="space-y-4">

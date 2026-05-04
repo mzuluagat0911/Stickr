@@ -1,6 +1,7 @@
 /**
- * Fondo decorativo estilo FIFA World Cup 2026 / Panini (referencia visual usuario):
- * magenta base, bandas onduladas y manchas de color sólido. Sin interactividad.
+ * Fondo decorativo estilo FIFA World Cup 2026 / Panini (magenta + bandas).
+ * Colocar dentro de un padre `relative overflow-hidden` acotado al layout (p. ej.
+ * la columna de contenido); evitar `100vw` centrado en viewport para no solapar sidebars.
  */
 export function AuthWc2026Backdrop() {
   return (
