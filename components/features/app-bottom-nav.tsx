@@ -14,7 +14,7 @@ export function AppBottomNav() {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pt-2 pb-[max(0.35rem,env(safe-area-inset-bottom))] md:hidden"
       aria-label="Principal"
     >
-      <div className="border-border/45 bg-background/72 supports-[backdrop-filter]:bg-background/58 dark:supports-[backdrop-filter]:bg-background/55 pointer-events-auto mx-auto max-w-md rounded-[22px] border shadow-[0_4px_28px_-8px_rgb(0_0_0_/_0.12)] backdrop-blur-2xl backdrop-saturate-150 dark:border-white/[0.08] dark:shadow-[0_8px_36px_-12px_rgb(0_0_0_/_0.55)]">
+      <div className="pointer-events-auto mx-auto max-w-md rounded-[22px] border border-black/10 bg-white/95 shadow-[0_25px_60px_-12px_rgb(0_0_0_/_0.28)] ring-1 ring-black/10 backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-zinc-950/95 dark:shadow-[0_8px_36px_-12px_rgb(0_0_0_/_0.55)] dark:ring-white/10">
         <ul className="grid grid-cols-5 gap-1 px-1 py-1">
           {APP_NAV_ITEMS.map(({ href, label, Icon }) => {
             const active = isNavActive(pathname, href);

@@ -13,17 +13,13 @@ export function AppSidebar({ className }: { className?: string }) {
     <aside
       className={cn(
         "relative z-20 flex w-56 shrink-0 flex-col",
-        "bg-sidebar text-sidebar-foreground",
-        "border-sidebar-border rounded-r-xl border",
-        "shadow-[inset_1px_0_0_rgb(255_255_255_/_0.45),inset_-1px_0_0_rgb(0_0_0_/_0.04),4px_0_28px_-12px_rgb(0_0_0_/_0.1)]",
-        "dark:border-sidebar-border dark:shadow-[inset_1px_0_0_rgb(255_255_255_/_0.06),inset_-1px_0_0_rgb(0_0_0_/_0.35),6px_0_36px_-10px_rgb(0_0_0_/_0.5)]",
-        "supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150",
+        "rounded-r-2xl border border-black/10 bg-white/95 text-zinc-900 shadow-[0_25px_60px_-12px_rgb(0_0_0_/_0.2)] ring-1 ring-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-zinc-950/95 dark:text-zinc-50 dark:shadow-[0_8px_40px_-12px_rgb(0_0_0_/_0.55)] dark:ring-white/10",
+        "supports-[backdrop-filter]:bg-white/92 supports-[backdrop-filter]:dark:bg-zinc-950/92",
         className,
       )}
     >
-      {/* Línea fina costado viewport: ancla visual sin competir con el contenido WC. */}
       <span
-        className="via-sidebar-border pointer-events-none absolute inset-y-8 left-0 w-px bg-gradient-to-b from-transparent to-transparent opacity-90"
+        className="pointer-events-none absolute inset-y-10 left-0 w-px bg-gradient-to-b from-transparent via-zinc-300/80 to-transparent opacity-80 dark:via-zinc-600/50"
         aria-hidden
       />
       <nav
@@ -37,12 +33,12 @@ export function AppSidebar({ className }: { className?: string }) {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium tracking-tight transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
-                "hover:border-sidebar-border/80 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:shadow-sm",
-                "focus-visible:ring-sidebar-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2",
+                "flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium tracking-tight text-zinc-700 transition-[color,background-color,border-color,box-shadow] duration-200 outline-none dark:text-zinc-300",
+                "hover:border-black/10 hover:bg-zinc-100 hover:text-zinc-950 hover:shadow-sm dark:hover:border-white/10 dark:hover:bg-zinc-800/80 dark:hover:text-white",
+                "focus-visible:ring-2 focus-visible:ring-[#2b59c3]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950",
                 active
-                  ? "border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground ring-sidebar-primary/20 dark:ring-sidebar-primary/35 shadow-sm ring-1"
-                  : "text-sidebar-foreground/78",
+                  ? "border-black/10 bg-zinc-100 text-zinc-950 shadow-sm ring-1 ring-[#d02670]/25 dark:border-white/10 dark:bg-zinc-800 dark:text-white dark:ring-[#ff6ba8]/30"
+                  : "",
               )}
             >
               <Icon
