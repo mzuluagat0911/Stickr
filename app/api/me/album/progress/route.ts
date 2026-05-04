@@ -91,7 +91,10 @@ export async function GET() {
     duplicateExtraCopies: p.duplicateExtraCopies,
     duplicatePhysicalRepeats: p.duplicatePhysicalRepeats,
     missing: p.missing,
+    slotsWithAtLeastOne: p.slotsWithAtLeastOne,
+    physicalSheetsOwned: p.physicalSheetsOwned,
     percent: p.percentCollected,
+    blocks: p.blocks,
     byTeam: p.byTeam,
     bar: p.bar,
   };

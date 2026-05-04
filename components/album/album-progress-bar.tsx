@@ -7,11 +7,11 @@ type AlbumProgressBarProps = {
 };
 
 export function AlbumProgressBar({ stats, className }: AlbumProgressBarProps) {
+  const slotsPct = Math.round(stats.percentCollected * 100);
   const tip = [
-    `${stats.have} tengo`,
-    `${stats.duplicatePhysicalRepeats} láminas repetidas (${stats.duplicateStickers} casillas)`,
-    `${stats.missing} faltan`,
-    `de ${stats.total} casillas`,
+    `${slotsPct}% del álbum: ${stats.slotsWithAtLeastOne} casillas con al menos una (máx. 1 por casilla para el %)`,
+    `${stats.duplicatePhysicalRepeats} láminas en «repetida» (informativo, no suma al %)`,
+    `Barra: verde = «tengo», ámbar = casilla «repetida», gris = vacía`,
   ].join(" · ");
 
   return (

@@ -620,7 +620,8 @@ export function AlbumGrid({
     );
   };
 
-  const pctLabel = `${Math.round(stats.percentCollected * 100)}%`;
+  const slotsPct = Math.round(stats.percentCollected * 100);
+  const bk = stats.blocks;
 
   const emptySearchHint =
     hasSearch && filteredCatalog.length === 0 && catalog.length > 0 ? (
@@ -760,29 +761,71 @@ export function AlbumGrid({
                   <span className="tabular-nums">
                     {formatIntegerEs(stats.missing)}
                   </span>{" "}
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    casillas
+                  </span>{" "}
                   de{" "}
                   <span className="tabular-nums">
                     {formatIntegerEs(stats.total)}
                   </span>{" "}
-                  figuritas para completar el álbum.
+                  del álbum (al menos una lámina por casilla).
                 </p>
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
-                  <span className="font-semibold">{pctLabel}</span>
-                  <span className="text-zinc-600 dark:text-zinc-400">
-                    {formatIntegerEs(stats.have)} tengo ·{" "}
-                    {formatIntegerEs(stats.duplicatePhysicalRepeats)} repetidas
-                    {stats.duplicateStickers > 0 ? (
-                      <>
-                        {" "}
-                        <span className="text-zinc-500 dark:text-zinc-500">
-                          ({formatIntegerEs(stats.duplicateStickers)} casillas,{" "}
-                          {formatIntegerEs(stats.duplicateExtraCopies)} de más)
-                        </span>
-                      </>
-                    ) : null}{" "}
-                    · {formatIntegerEs(stats.missing)} faltan ·{" "}
-                    {formatIntegerEs(stats.total)} total
-                  </span>
+                <div className="space-y-1.5 text-sm leading-snug">
+                  <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="font-semibold tabular-nums">
+                      {slotsPct}%
+                    </span>
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      del álbum:{" "}
+                      <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                        {formatIntegerEs(stats.slotsWithAtLeastOne)}
+                      </span>
+                      /{formatIntegerEs(stats.total)} casillas con al menos una
+                      lámina (cada casilla cuenta como mucho{" "}
+                      <span className="font-medium">1</span> para el %, aunque
+                      marques ×3 o ×4).
+                    </span>
+                  </p>
+                  <p className="text-zinc-600 dark:text-zinc-400">
+                    Suma por bloque (debe coincidir con lo anterior): Intro
+                    (FWC){" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(bk.introFwc.slotsWithCopy)}
+                    </span>
+                    /{formatIntegerEs(bk.introFwc.catalogTotal)} · Equipos{" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(bk.nationalTeams.slotsWithCopy)}
+                    </span>
+                    /{formatIntegerEs(bk.nationalTeams.catalogTotal)} · Museo{" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(bk.museum.slotsWithCopy)}
+                    </span>
+                    /{formatIntegerEs(bk.museum.catalogTotal)}
+                  </p>
+                  <p className="text-zinc-600 dark:text-zinc-400">
+                    Repetidas (solo información,{" "}
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                      no suben el %
+                    </span>
+                    ):{" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(stats.duplicatePhysicalRepeats)}
+                    </span>{" "}
+                    láminas en casillas «repetida» (
+                    <span className="tabular-nums">
+                      {formatIntegerEs(stats.duplicateExtraCopies)}
+                    </span>{" "}
+                    copias de más). Láminas físicas totales en tu poder:{" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(stats.physicalSheetsOwned)}
+                    </span>
+                    .
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                    «Tengo» {formatIntegerEs(stats.have)} · «Repetida»{" "}
+                    {formatIntegerEs(stats.duplicateStickers)} casillas · Vacías{" "}
+                    {formatIntegerEs(stats.missing)}
+                  </p>
                 </div>
                 <AlbumProgressBar stats={stats} />
               </div>

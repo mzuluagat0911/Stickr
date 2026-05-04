@@ -9,6 +9,17 @@ export type TeamProgressSlice = {
   missing: number;
 };
 
+/** Intro FWC, selecciones o Museo: mismas reglas que el total del álbum. */
+export type AlbumBlockRollup = {
+  catalogTotal: number;
+  /** Casillas con al menos una lámina (1 por casilla hacia el % del álbum). */
+  slotsWithCopy: number;
+  duplicateSlots: number;
+  duplicateExtraCopies: number;
+  /** Suma de `duplicateCount` en casillas «repetida» de este bloque (solo informativo). */
+  physicalRepeatsInBlock: number;
+};
+
 export type AlbumProgressStats = {
   total: number;
   have: number;
@@ -18,12 +29,25 @@ export type AlbumProgressStats = {
   duplicateExtraCopies: number;
   /**
    * Láminas físicas en estado repetida: suma de `duplicateCount` en esas casillas
-   * (= duplicateStickers + duplicateExtraCopies).
+   * (= duplicateStickers + duplicateExtraCopies). Solo informativo; no entra al %.
    */
   duplicatePhysicalRepeats: number;
   missing: number;
-  /** (have + duplicateStickers) / total — al menos una copia en cada casillero */
+  /** Casillas con al menos una lámina (tengo o repetida). = intro + equipos + museo */
+  slotsWithAtLeastOne: number;
+  /**
+   * Láminas físicas en tu poder: 1 por «tengo» + suma de cantidades en «repetida».
+   * Informativo; el % del álbum usa solo `slotsWithAtLeastOne`.
+   */
+  physicalSheetsOwned: number;
+  /** (have + duplicateStickers) / total — una casilla cuenta como mucho una vez */
   percentCollected: number;
+  /** Suma de `slotsWithCopy` por bloque; debe coincidir con `slotsWithAtLeastOne`. */
+  blocks: {
+    introFwc: AlbumBlockRollup;
+    nationalTeams: AlbumBlockRollup;
+    museum: AlbumBlockRollup;
+  };
   byTeam: Record<string, TeamProgressSlice>;
   bar: { gray: number; green: number; gold: number };
 };
@@ -44,6 +68,50 @@ function entryForSticker(
   }
   const n = Math.max(2, row.duplicateCount || 2);
   return { kind: "duplicate", extra: n - 1 };
+}
+
+function emptyBlockRollup(): AlbumBlockRollup {
+  return {
+    catalogTotal: 0,
+    slotsWithCopy: 0,
+    duplicateSlots: 0,
+    duplicateExtraCopies: 0,
+    physicalRepeatsInBlock: 0,
+  };
+}
+
+function rollupAlbumBlocks(
+  byTeam: Record<string, TeamProgressSlice>,
+): AlbumProgressStats["blocks"] {
+  const introFwc = emptyBlockRollup();
+  const museum = emptyBlockRollup();
+  const nationalTeams = emptyBlockRollup();
+
+  for (const [code, t] of Object.entries(byTeam)) {
+    const swc = t.have + t.duplicateSlots;
+    const physRep = t.duplicateSlots + t.duplicateExtraCopies;
+    if (code === "FWC") {
+      introFwc.catalogTotal += t.total;
+      introFwc.slotsWithCopy += swc;
+      introFwc.duplicateSlots += t.duplicateSlots;
+      introFwc.duplicateExtraCopies += t.duplicateExtraCopies;
+      introFwc.physicalRepeatsInBlock += physRep;
+    } else if (code === "MUSEUM") {
+      museum.catalogTotal += t.total;
+      museum.slotsWithCopy += swc;
+      museum.duplicateSlots += t.duplicateSlots;
+      museum.duplicateExtraCopies += t.duplicateExtraCopies;
+      museum.physicalRepeatsInBlock += physRep;
+    } else {
+      nationalTeams.catalogTotal += t.total;
+      nationalTeams.slotsWithCopy += swc;
+      nationalTeams.duplicateSlots += t.duplicateSlots;
+      nationalTeams.duplicateExtraCopies += t.duplicateExtraCopies;
+      nationalTeams.physicalRepeatsInBlock += physRep;
+    }
+  }
+
+  return { introFwc, nationalTeams, museum };
 }
 
 export function computeAlbumProgress(
@@ -86,9 +154,30 @@ export function computeAlbumProgress(
     }
   }
 
-  const collected = have + duplicateStickers;
-  const percentCollected = total > 0 ? collected / total : 0;
+  const slotsWithAtLeastOne = have + duplicateStickers;
+  const percentCollected = total > 0 ? slotsWithAtLeastOne / total : 0;
   const duplicatePhysicalRepeats = duplicateStickers + duplicateExtraCopies;
+  const physicalSheetsOwned = have + duplicatePhysicalRepeats;
+  const blocks = rollupAlbumBlocks(byTeam);
+
+  const sumBlockCatalog =
+    blocks.introFwc.catalogTotal +
+    blocks.nationalTeams.catalogTotal +
+    blocks.museum.catalogTotal;
+  const sumBlockSlotsCopy =
+    blocks.introFwc.slotsWithCopy +
+    blocks.nationalTeams.slotsWithCopy +
+    blocks.museum.slotsWithCopy;
+  if (sumBlockCatalog !== total || sumBlockSlotsCopy !== slotsWithAtLeastOne) {
+    throw new Error(
+      [
+        "[computeAlbumProgress] Invariante de sumas rota.",
+        `catalog ${sumBlockCatalog} vs total ${total};`,
+        `slotsCopy ${sumBlockSlotsCopy} vs slotsWithAtLeastOne ${slotsWithAtLeastOne}.`,
+      ].join(" "),
+    );
+  }
+
   /** Peso visual por casilla: verde = tengo, dorado = repetida (1 por casilla), gris = falta */
   const green = total > 0 ? have / total : 0;
   const gold = total > 0 ? duplicateStickers / total : 0;
@@ -100,7 +189,10 @@ export function computeAlbumProgress(
     duplicateExtraCopies,
     duplicatePhysicalRepeats,
     missing,
+    slotsWithAtLeastOne,
+    physicalSheetsOwned,
     percentCollected,
+    blocks,
     byTeam,
     bar: { gray, green, gold },
   };

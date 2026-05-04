@@ -45,6 +45,8 @@ describe("computeAlbumProgress", () => {
     expect(p.duplicateStickers).toBe(0);
     expect(p.duplicateExtraCopies).toBe(0);
     expect(p.duplicatePhysicalRepeats).toBe(0);
+    expect(p.slotsWithAtLeastOne).toBe(0);
+    expect(p.physicalSheetsOwned).toBe(0);
     expect(p.missing).toBe(3);
     expect(p.percentCollected).toBe(0);
     expect(p.bar.green).toBe(0);
@@ -52,6 +54,14 @@ describe("computeAlbumProgress", () => {
     expect(p.bar.gray).toBe(1);
     expect(p.byTeam.FWC.missing).toBe(2);
     expect(p.byTeam.ARG.missing).toBe(1);
+    expect(p.blocks.introFwc.catalogTotal).toBe(2);
+    expect(p.blocks.nationalTeams.catalogTotal).toBe(1);
+    expect(p.blocks.museum.catalogTotal).toBe(0);
+    expect(
+      p.blocks.introFwc.slotsWithCopy +
+        p.blocks.nationalTeams.slotsWithCopy +
+        p.blocks.museum.slotsWithCopy,
+    ).toBe(0);
   });
 
   it("have y duplicate con copias extra", () => {
@@ -64,6 +74,8 @@ describe("computeAlbumProgress", () => {
     expect(p.duplicateStickers).toBe(1);
     expect(p.duplicateExtraCopies).toBe(3);
     expect(p.duplicatePhysicalRepeats).toBe(4);
+    expect(p.slotsWithAtLeastOne).toBe(2);
+    expect(p.physicalSheetsOwned).toBe(5);
     expect(p.missing).toBe(1);
     expect(p.percentCollected).toBeCloseTo(2 / 3);
     expect(p.bar.green).toBeCloseTo(1 / 3);
@@ -71,5 +83,16 @@ describe("computeAlbumProgress", () => {
     expect(p.bar.gray).toBeCloseTo(1 / 3);
     expect(p.byTeam.FWC.duplicateSlots).toBe(1);
     expect(p.byTeam.FWC.duplicateExtraCopies).toBe(3);
+    expect(p.blocks.introFwc.catalogTotal).toBe(2);
+    expect(p.blocks.introFwc.slotsWithCopy).toBe(2);
+    expect(p.blocks.introFwc.physicalRepeatsInBlock).toBe(4);
+    expect(p.blocks.nationalTeams.catalogTotal).toBe(1);
+    expect(p.blocks.nationalTeams.slotsWithCopy).toBe(0);
+    expect(p.blocks.museum.catalogTotal).toBe(0);
+    expect(
+      p.blocks.introFwc.slotsWithCopy +
+        p.blocks.nationalTeams.slotsWithCopy +
+        p.blocks.museum.slotsWithCopy,
+    ).toBe(p.slotsWithAtLeastOne);
   });
 });
