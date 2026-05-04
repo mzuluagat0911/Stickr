@@ -42,6 +42,7 @@ import {
   getTeamSearchBlobMap,
   stickerMatchesAlbumSearch,
 } from "@/lib/teams/album-search";
+import { cn } from "@/lib/utils";
 import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
@@ -87,7 +88,7 @@ const ALBUM_SECTION_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const albumTabTriggerClass =
-  "max-w-max shrink-0 grow-0 basis-auto rounded-lg px-3 py-2.5 text-xs font-semibold tracking-tight transition-[color,background-color,box-shadow] duration-200 hover:bg-background/55 hover:text-foreground sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm";
+  "max-w-max shrink-0 grow-0 basis-auto rounded-xl px-3 py-2.5 text-xs font-semibold tracking-tight transition-[color,background-color,box-shadow] duration-200 hover:bg-card/90 hover:text-foreground sm:min-h-9 sm:px-4 sm:py-2 sm:text-sm";
 
 type Mut =
   | { op: "have"; stickerId: string }
@@ -212,7 +213,7 @@ function TeamCollapsible({
           </span>
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="border-border/40 bg-muted/20 dark:bg-muted/10 border-t p-2 sm:p-3">
+      <CollapsibleContent className="border-border/40 from-card to-muted/25 dark:to-muted/15 border-t bg-gradient-to-b p-2 sm:p-3">
         <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
           {stickers.map((s) => (
             <Fragment key={s.id}>{renderCell(s)}</Fragment>
@@ -548,9 +549,9 @@ export function AlbumGrid({
 
   return (
     <>
-      {/* Velo semitransparente: deja ver el WC del layout en márgenes/fondo; tarjetas siguen opacas. */}
+      {/* Velo ligero: WC visible en márgenes; tarjetas bg-card encima son opacas y legibles. */}
       <div
-        className="bg-background/82 supports-backdrop-filter:bg-background/75 dark:bg-background/78 dark:supports-backdrop-filter:bg-background/68 relative isolate min-w-0 space-y-6 backdrop-blur-sm"
+        className="bg-background/90 supports-backdrop-filter:bg-background/85 dark:bg-background/86 dark:supports-backdrop-filter:bg-background/80 relative isolate min-w-0 space-y-6 backdrop-blur-sm"
         data-page="album"
       >
         <div className="space-y-4">
@@ -564,7 +565,7 @@ export function AlbumGrid({
             >
               Mi álbum
             </h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
+            <p className="text-muted-foreground mt-2 max-w-prose text-sm leading-relaxed">
               <span className="md:hidden">
                 Toca una casilla para avanzar: falta → tengo → repetida. En
                 falta, la estrella arriba a la derecha prioriza para{" "}
@@ -601,7 +602,10 @@ export function AlbumGrid({
                 placeholder="Buscar por número (7), equipo (FWC) o nombre…"
                 value={searchQuery}
                 onChange={(e) => onSearchQueryChange(e.target.value)}
-                className={searchQuery.trim() ? "pr-10" : undefined}
+                className={cn(
+                  "border-border/60 bg-card dark:bg-card/95 shadow-sm",
+                  searchQuery.trim() ? "pr-10" : undefined,
+                )}
               />
               {searchQuery.trim() ? (
                 <Button
@@ -655,7 +659,7 @@ export function AlbumGrid({
           </div>
         </div>
 
-        <div className="bg-card/95 supports-backdrop-filter:bg-card/90 text-card-foreground border-border/80 sticky top-0 z-10 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
+        <div className="border-border/60 bg-card text-card-foreground sticky top-0 z-10 space-y-3 rounded-xl border p-4 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1 space-y-2">
               <p className="text-base leading-snug font-medium tracking-tight">
@@ -682,12 +686,17 @@ export function AlbumGrid({
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:items-end">
               <Link href="/discover" className="w-full sm:w-auto">
-                <Button type="button" variant="secondary" size="sm">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-10 min-h-10 w-full px-4 text-sm sm:h-9 sm:min-h-9 sm:w-auto"
+                >
                   Ir a Intercambio
                 </Button>
               </Link>
               <DropdownMenu>
-                <DropdownMenuTrigger className="border-border bg-secondary/80 hover:bg-secondary inline-flex h-9 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-sm transition-all duration-200 outline-none sm:h-8 sm:w-auto">
+                <DropdownMenuTrigger className="border-border bg-secondary/80 hover:bg-secondary inline-flex h-10 min-h-10 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-3 text-[0.8rem] font-medium shadow-sm transition-all duration-200 outline-none sm:h-9 sm:min-h-9 sm:w-auto">
                   Exportar y lote
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-52">
@@ -727,7 +736,7 @@ export function AlbumGrid({
             <Select value={tab} onValueChange={setTab}>
               <SelectTrigger
                 id="album-section-select"
-                className="border-border/60 bg-background h-11 w-full rounded-xl px-3 shadow-sm"
+                className="border-border/60 bg-card dark:bg-card/95 h-11 w-full rounded-xl px-3 shadow-sm"
               >
                 <SelectValue placeholder="Elige una sección" />
               </SelectTrigger>
@@ -749,11 +758,11 @@ export function AlbumGrid({
           </div>
 
           <div
-            className="border-border/50 bg-muted/45 hidden max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.05)] [-ms-overflow-style:none] [scrollbar-width:thin] md:block md:scroll-px-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 md:[&::-webkit-scrollbar]:hidden"
+            className="border-border/50 bg-muted/40 dark:bg-muted/35 hidden max-w-full overflow-x-auto rounded-2xl border p-1.5 shadow-sm [-ms-overflow-style:none] [scrollbar-width:thin] md:block md:scroll-px-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-0 md:[&::-webkit-scrollbar]:hidden"
             role="region"
             aria-label="Secciones del álbum (vista ancha)"
           >
-            <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/40 dark:ring-border/20 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
+            <TabsList className="bg-muted/70 text-muted-foreground ring-border/35 dark:bg-muted/45 dark:ring-border/25 flex h-auto min-w-max flex-nowrap gap-1 rounded-xl p-1 ring-1 sm:gap-1.5">
               <TabsTrigger
                 value="intro"
                 title="Intro Panini (FWC): escudo, trofeo, mascota, sedes (n.º 1–20 en catálogo)"

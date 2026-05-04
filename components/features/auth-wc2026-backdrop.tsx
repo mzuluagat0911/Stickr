@@ -1,19 +1,41 @@
+import { cn } from "@/lib/utils";
+
+export type AuthWc2026BackdropVariant = "full" | "column";
+
 /**
  * Fondo decorativo estilo FIFA World Cup 2026 / Panini (magenta + bandas).
  * Colocar dentro de un padre `relative overflow-hidden` acotado al layout (p. ej.
  * la columna de contenido); evitar `100vw` centrado en viewport para no solapar sidebars.
+ *
+ * `column`: menos saturación para que las tarjetas encima respiren (layout app).
  */
-export function AuthWc2026Backdrop() {
+export function AuthWc2026Backdrop({
+  variant = "full",
+}: {
+  variant?: AuthWc2026BackdropVariant;
+} = {}) {
+  const column = variant === "column";
+
   return (
     <div
       className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden
     >
       {/* Capa base — magenta oficial aproximado */}
-      <div className="absolute inset-0 bg-[#d02670] dark:bg-[#7a1545]" />
+      <div
+        className={cn(
+          "absolute inset-0",
+          column
+            ? "bg-[#d02670]/88 dark:bg-[#7a1545]/88"
+            : "bg-[#d02670] dark:bg-[#7a1545]",
+        )}
+      />
       {/* Manchas / arcos (azul, naranja, lima) */}
       <svg
-        className="absolute -top-[8%] -left-[25%] h-[85%] w-[150%] opacity-[0.92] sm:-left-[12%] sm:w-[125%]"
+        className={cn(
+          "absolute -top-[8%] -left-[25%] h-[85%] w-[150%] sm:-left-[12%] sm:w-[125%]",
+          column ? "opacity-[0.72]" : "opacity-[0.92]",
+        )}
         viewBox="0 0 900 700"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -48,7 +70,10 @@ export function AuthWc2026Backdrop() {
         />
       </svg>
       <svg
-        className="absolute -right-[20%] bottom-[-15%] h-[70%] w-[120%] opacity-90 sm:right-0 sm:w-[90%]"
+        className={cn(
+          "absolute -right-[20%] bottom-[-15%] h-[70%] w-[120%] sm:right-0 sm:w-[90%]",
+          column ? "opacity-70" : "opacity-90",
+        )}
         viewBox="0 0 800 600"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -68,7 +93,14 @@ export function AuthWc2026Backdrop() {
           opacity="0.88"
         />
       </svg>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/[0.07] via-transparent to-black/15 dark:from-black/25 dark:to-black/40" />
+      <div
+        className={cn(
+          "absolute inset-0 bg-gradient-to-b via-transparent",
+          column
+            ? "from-background/30 to-background/25 dark:from-background/35 dark:to-background/40"
+            : "from-black/[0.07] to-black/15 dark:from-black/25 dark:to-black/40",
+        )}
+      />
     </div>
   );
 }

@@ -153,7 +153,7 @@ export function StickerCell({
             className={cn(
               "focus-visible:ring-ring relative flex aspect-[4/5] w-full touch-manipulation flex-col rounded-lg border text-left outline-none focus-visible:ring-2",
               state === "missing" &&
-                "bg-muted/80 text-muted-foreground border-border",
+                "border-border bg-card text-muted-foreground dark:bg-card/95",
               state === "have" &&
                 "border-emerald-600/40 bg-emerald-500/15 text-emerald-950 dark:text-emerald-50",
               state === "duplicate" &&

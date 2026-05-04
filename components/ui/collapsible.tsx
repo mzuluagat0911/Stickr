@@ -22,7 +22,7 @@ function CollapsibleTrigger({
     <CollapsiblePrimitive.Trigger
       data-slot="collapsible-trigger"
       className={cn(
-        "group/collapsible-trigger hover:bg-muted/80 focus-visible:ring-ring flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium transition-colors outline-none focus-visible:ring-2",
+        "group/collapsible-trigger hover:bg-muted/80 focus-visible:ring-ring focus-visible:ring-offset-background flex w-full items-center justify-between gap-2 rounded-lg px-2 py-2 text-left text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         className,
       )}
       asChild={asChild}

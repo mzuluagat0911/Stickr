@@ -17,7 +17,7 @@ export default function AppGroupLayout({
           className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
           aria-hidden
         >
-          <AuthWc2026Backdrop />
+          <AuthWc2026Backdrop variant="column" />
         </div>
         <div className="relative z-10 mx-auto min-h-0 w-full max-w-6xl flex-1 px-5 py-7 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-6 md:py-9 md:pb-10">
           {children}

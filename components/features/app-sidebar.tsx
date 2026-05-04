@@ -14,10 +14,10 @@ export function AppSidebar({ className }: { className?: string }) {
       className={cn(
         "relative z-20 flex w-56 shrink-0 flex-col",
         "bg-sidebar text-sidebar-foreground",
-        "border-sidebar-border rounded-r-2xl border",
+        "border-sidebar-border rounded-r-xl border",
         "shadow-[inset_1px_0_0_rgb(255_255_255_/_0.45),inset_-1px_0_0_rgb(0_0_0_/_0.04),4px_0_28px_-12px_rgb(0_0_0_/_0.1)]",
         "dark:border-sidebar-border dark:shadow-[inset_1px_0_0_rgb(255_255_255_/_0.06),inset_-1px_0_0_rgb(0_0_0_/_0.35),6px_0_36px_-10px_rgb(0_0_0_/_0.5)]",
-        "supports-[backdrop-filter]:bg-sidebar/92 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150",
+        "supports-[backdrop-filter]:backdrop-blur-md supports-[backdrop-filter]:backdrop-saturate-150",
         className,
       )}
     >
