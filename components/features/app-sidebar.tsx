@@ -12,11 +12,24 @@ export function AppSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        "border-border/40 bg-background/55 supports-backdrop-filter:bg-background/45 w-56 shrink-0 border-r backdrop-blur-xl backdrop-saturate-150",
+        "relative z-20 flex w-56 shrink-0 flex-col",
+        "bg-sidebar text-sidebar-foreground",
+        "border-sidebar-border rounded-r-2xl border",
+        "shadow-[inset_1px_0_0_rgb(255_255_255_/_0.45),inset_-1px_0_0_rgb(0_0_0_/_0.04),4px_0_28px_-12px_rgb(0_0_0_/_0.1)]",
+        "dark:border-sidebar-border dark:shadow-[inset_1px_0_0_rgb(255_255_255_/_0.06),inset_-1px_0_0_rgb(0_0_0_/_0.35),6px_0_36px_-10px_rgb(0_0_0_/_0.5)]",
+        "supports-[backdrop-filter]:bg-sidebar/92 supports-[backdrop-filter]:backdrop-blur-xl supports-[backdrop-filter]:backdrop-saturate-150",
         className,
       )}
     >
-      <nav className="flex flex-col gap-0.5 p-3 pt-8" aria-label="Principal">
+      {/* Línea fina costado viewport: ancla visual sin competir con el contenido WC. */}
+      <span
+        className="via-sidebar-border pointer-events-none absolute inset-y-8 left-0 w-px bg-gradient-to-b from-transparent to-transparent opacity-90"
+        aria-hidden
+      />
+      <nav
+        className="flex flex-col gap-1 px-3 py-7 pb-8"
+        aria-label="Principal"
+      >
         {APP_NAV_ITEMS.map(({ href, label, Icon }) => {
           const active = isNavActive(pathname, href);
           return (
@@ -24,13 +37,21 @@ export function AppSidebar({ className }: { className?: string }) {
               key={href}
               href={href}
               className={cn(
-                "hover:bg-foreground/[0.05] flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium tracking-tight transition-colors duration-150 dark:hover:bg-white/[0.06]",
+                "flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium tracking-tight transition-[color,background-color,border-color,box-shadow] duration-200 outline-none",
+                "hover:border-sidebar-border/80 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:shadow-sm",
+                "focus-visible:ring-sidebar-ring focus-visible:ring-offset-sidebar focus-visible:ring-2 focus-visible:ring-offset-2",
                 active
-                  ? "bg-foreground/[0.07] text-foreground dark:bg-white/[0.1] dark:text-white"
-                  : "text-muted-foreground",
+                  ? "border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground ring-sidebar-primary/20 dark:ring-sidebar-primary/35 shadow-sm ring-1"
+                  : "text-sidebar-foreground/78",
               )}
             >
-              <Icon className="size-5 shrink-0" aria-hidden />
+              <Icon
+                className={cn(
+                  "size-5 shrink-0 transition-opacity",
+                  active ? "opacity-100" : "opacity-85",
+                )}
+                aria-hidden
+              />
               {label}
             </Link>
           );
