@@ -24,7 +24,10 @@ import {
   getExchangeWantIdsAction,
   toggleExchangeWantAction,
 } from "@/app/actions/exchange-wants";
-import { computeAlbumProgress } from "@/lib/album/progress";
+import {
+  computeAlbumProgress,
+  type TeamProgressSlice,
+} from "@/lib/album/progress";
 import {
   formatMissingCsv,
   formatMissingDetailLines,
@@ -182,34 +185,89 @@ export type AlbumGridProps = {
 function TeamCollapsible({
   team,
   stickers,
+  teamSlice,
   renderCell,
 }: {
   team: Team2026;
   stickers: CatalogStickerDTO[];
+  teamSlice: TeamProgressSlice | undefined;
   renderCell: (s: CatalogStickerDTO) => ReactNode;
 }) {
-  const n = stickers.length;
+  const total = teamSlice?.total ?? stickers.length;
+  const have = teamSlice?.have ?? 0;
+  const dup = teamSlice?.duplicateSlots ?? 0;
+  const missing = teamSlice?.missing ?? Math.max(0, total - have - dup);
+  const collected = have + dup;
+  const pct = total > 0 ? Math.round((collected / total) * 100) : 0;
+  const greenW = total > 0 ? (have / total) * 100 : 0;
+  const goldW = total > 0 ? (dup / total) * 100 : 0;
+
+  const summaryLabel = `${team.name}: ${pct}% del álbum del equipo. ${formatIntegerEs(collected)} de ${formatIntegerEs(total)} con al menos una copia, ${formatIntegerEs(missing)} faltantes.`;
+
   return (
     <Collapsible
       defaultOpen={false}
       className="rounded-xl border border-zinc-200/90 bg-white text-zinc-900 shadow-sm transition-[box-shadow,background-color] duration-200 hover:border-zinc-300 hover:shadow-md dark:border-zinc-600/80 dark:bg-zinc-900/40 dark:text-zinc-50 dark:hover:border-zinc-500"
     >
-      <CollapsibleTrigger className="min-h-12 w-full px-3 py-2.5 text-left sm:min-h-11 sm:px-4">
-        <span className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="text-lg leading-none select-none" aria-hidden>
-            {fifaTeamFlagEmoji(team.code)}
+      <CollapsibleTrigger
+        className="min-h-12 w-full px-3 py-2.5 text-left sm:min-h-11 sm:px-4"
+        aria-label={summaryLabel}
+      >
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1.5 sm:flex-nowrap sm:items-center sm:gap-3">
+          <span className="flex max-w-[42%] min-w-0 shrink-0 items-center gap-2 sm:max-w-[14rem]">
+            <span className="text-lg leading-none select-none" aria-hidden>
+              {fifaTeamFlagEmoji(team.code)}
+            </span>
+            <span className="min-w-0 truncate font-semibold tracking-tight text-zinc-950 dark:text-white">
+              {team.name}
+            </span>
           </span>
-          <span className="min-w-0 flex-1 truncate font-semibold tracking-tight text-zinc-950 dark:text-white">
-            {team.name}
-          </span>
-          <span
-            className="text-muted-foreground border-border/50 bg-muted/50 inline-flex shrink-0 items-center justify-center rounded-full border px-1.5 py-0.5 font-mono text-[10px] tabular-nums sm:px-2"
-            title={`${n} figurita${n === 1 ? "" : "s"} en este equipo`}
-          >
-            {n}
-          </span>
-          <span className="text-muted-foreground border-border/45 bg-muted/45 shrink-0 rounded-md border px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide">
-            {team.code}
+
+          <div className="order-last flex min-w-[6.5rem] flex-1 flex-col gap-1 sm:order-none sm:max-w-md sm:min-w-0">
+            <div
+              className="relative h-1.5 w-full overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-700/80"
+              aria-hidden
+            >
+              <div className="absolute inset-0 flex">
+                <div
+                  className="h-full bg-emerald-500/90 transition-[width] duration-300 motion-reduce:transition-none dark:bg-emerald-400/90"
+                  style={{ width: `${greenW}%` }}
+                />
+                <div
+                  className="h-full bg-amber-400/95 transition-[width] duration-300 motion-reduce:transition-none"
+                  style={{ width: `${goldW}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-[10px] leading-tight text-zinc-600 sm:text-[11px] dark:text-zinc-400">
+              <span className="font-medium text-zinc-800 tabular-nums dark:text-zinc-200">
+                {formatIntegerEs(collected)} de {formatIntegerEs(total)}
+              </span>
+              {" · "}
+              <span className="tabular-nums">
+                {formatIntegerEs(missing)} faltan
+              </span>
+              {dup > 0 ? (
+                <>
+                  {" · "}
+                  <span className="text-amber-800/90 tabular-nums dark:text-amber-300/90">
+                    {formatIntegerEs(dup)} repetida{dup === 1 ? "" : "s"}
+                  </span>
+                </>
+              ) : null}
+            </p>
+          </div>
+
+          <span className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0">
+            <span
+              className="text-primary text-sm font-bold tracking-tight tabular-nums sm:text-base"
+              title={`${pct}% de la selección`}
+            >
+              {pct}%
+            </span>
+            <span className="rounded-md border border-zinc-200/90 bg-zinc-50 px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide text-zinc-700 dark:border-zinc-600/80 dark:bg-zinc-800/80 dark:text-zinc-200">
+              {team.code}
+            </span>
           </span>
         </span>
       </CollapsibleTrigger>
@@ -851,6 +909,7 @@ export function AlbumGrid({
                           key={team.code}
                           team={team}
                           stickers={stickerByTeam.get(team.code) ?? []}
+                          teamSlice={stats.byTeam[team.code]}
                           renderCell={renderSticker}
                         />
                       ))}
