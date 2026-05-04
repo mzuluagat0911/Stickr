@@ -38,6 +38,10 @@ import {
   albumStickersQueryKey,
   exchangeWantsQueryKey,
 } from "@/lib/album/query-keys";
+import {
+  FWC_INTRO_CATALOG_MAX,
+  FWC_INTRO_CATALOG_MIN,
+} from "@/lib/album/slot-label";
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
 import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
@@ -77,9 +81,6 @@ import {
   WORLD_CUP_2026_ALBUM_GROUPS,
   albumTabIdForTeamCode,
 } from "@/scripts/data/teams-2026";
-
-/** Figuritas FWC del bloque intro (n.º globales 1–20 en catálogo). */
-const FWC_INTRO_MAX = 20;
 
 const ALBUM_SECTION_OPTIONS: { value: string; label: string }[] = [
   { value: "intro", label: "Intro (FWC)" },
@@ -132,6 +133,22 @@ async function runServerMut(m: Mut): Promise<void> {
 
 type AlbumStatusFilter = "all" | "missing" | "have" | "duplicate" | "priority";
 
+function applyAlbumStatusFilter(
+  stickers: CatalogStickerDTO[],
+  statusFilter: AlbumStatusFilter,
+  userMap: UserStickerMapDTO | undefined,
+  wantSet: Set<string>,
+): CatalogStickerDTO[] {
+  if (statusFilter === "all") return stickers;
+  return stickers.filter((s) => {
+    const entry = userMap?.[s.id];
+    if (statusFilter === "missing") return !entry;
+    if (statusFilter === "have") return entry?.status === "have";
+    if (statusFilter === "duplicate") return entry?.status === "duplicate";
+    return !entry && wantSet.has(s.id);
+  });
+}
+
 function applyAlbumFilters(
   catalog: CatalogStickerDTO[],
   searchInput: string,
@@ -146,22 +163,15 @@ function applyAlbumFilters(
     : catalog.filter((s) =>
         stickerMatchesAlbumSearch(s, searchInput, teamSearchBlobs),
       );
-  if (statusFilter === "all") return bySearch;
-  return bySearch.filter((s) => {
-    const entry = userMap?.[s.id];
-    if (statusFilter === "missing") return !entry;
-    if (statusFilter === "have") return entry?.status === "have";
-    if (statusFilter === "duplicate") return entry?.status === "duplicate";
-    return !entry && wantSet.has(s.id);
-  });
+  return applyAlbumStatusFilter(bySearch, statusFilter, userMap, wantSet);
 }
 
 function pickAlbumSearchTab(filtered: CatalogStickerDTO[]): string | null {
   for (const s of filtered) {
     if (
       s.teamCode === "FWC" &&
-      s.stickerNumber >= 1 &&
-      s.stickerNumber <= FWC_INTRO_MAX
+      s.stickerNumber >= FWC_INTRO_CATALOG_MIN &&
+      s.stickerNumber <= FWC_INTRO_CATALOG_MAX
     ) {
       return "intro";
     }
@@ -463,25 +473,35 @@ export function AlbumGrid({
 
   const hasSearch = searchQuery.trim().length > 0;
 
-  const introFwc = useMemo(
+  const introFwcAll = useMemo(
     () =>
-      filteredCatalog
+      catalog
         .filter(
           (s) =>
             s.teamCode === "FWC" &&
-            s.stickerNumber >= 1 &&
-            s.stickerNumber <= FWC_INTRO_MAX,
+            s.stickerNumber >= FWC_INTRO_CATALOG_MIN &&
+            s.stickerNumber <= FWC_INTRO_CATALOG_MAX,
         )
         .sort((a, b) => a.stickerNumber - b.stickerNumber),
-    [filteredCatalog],
+    [catalog],
+  );
+
+  const introFwc = useMemo(
+    () => applyAlbumStatusFilter(introFwcAll, statusFilter, userMap, wantSet),
+    [introFwcAll, statusFilter, userMap, wantSet],
+  );
+
+  const museumAll = useMemo(
+    () =>
+      catalog
+        .filter((s) => s.teamCode === "MUSEUM")
+        .sort((a, b) => a.stickerNumber - b.stickerNumber),
+    [catalog],
   );
 
   const museum = useMemo(
-    () =>
-      filteredCatalog
-        .filter((s) => s.teamCode === "MUSEUM")
-        .sort((a, b) => a.stickerNumber - b.stickerNumber),
-    [filteredCatalog],
+    () => applyAlbumStatusFilter(museumAll, statusFilter, userMap, wantSet),
+    [museumAll, statusFilter, userMap, wantSet],
   );
 
   const stickerByTeam = useMemo(() => {
@@ -831,7 +851,7 @@ export function AlbumGrid({
               <TabsList className="flex h-auto min-w-max flex-nowrap gap-1 rounded-xl bg-zinc-200/60 p-1 text-zinc-700 ring-1 ring-zinc-300/50 sm:gap-1.5 dark:bg-zinc-800/60 dark:text-zinc-300 dark:ring-zinc-600/40">
                 <TabsTrigger
                   value="intro"
-                  title="Intro Panini (FWC): escudo, trofeo, mascota, sedes (n.º 1–20 en catálogo)"
+                  title="Intro Panini (FWC): FWC 00 y FWC 1–19 (n.º de catálogo digital 1–20)"
                   className={albumTabTriggerClass}
                 >
                   Intro
@@ -857,20 +877,26 @@ export function AlbumGrid({
             </div>
 
             <TabsContent value="intro">
-              {emptySearchHint ? null : introFwc.length === 0 ? (
+              {emptySearchHint ? null : introFwcAll.length === 0 ? (
                 <p className="text-muted-foreground py-8 text-center text-sm">
-                  No hay figuritas de intro FWC{" "}
-                  {hasSearch
-                    ? "que coincidan con tu búsqueda"
-                    : "en este catálogo"}
-                  .
+                  No hay figuritas de intro FWC en este catálogo.
+                </p>
+              ) : introFwc.length === 0 ? (
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  Ninguna figurita de intro coincide con el filtro de estado
+                  activo. Probá con «Todas» u otro filtro.
                 </p>
               ) : (
                 <div className="space-y-3">
                   <p className="text-muted-foreground text-sm leading-relaxed">
-                    Bloque inicial Panini (FWC): escudo, trofeo, mascota, balón,
-                    sedes anfitrionas y resto del tramo intro según catálogo
-                    digital.
+                    Bloque inicial Panini (FWC): en el álbum van{" "}
+                    <span className="text-foreground font-medium">FWC 00</span>{" "}
+                    más{" "}
+                    <span className="text-foreground font-medium">
+                      FWC 1 a FWC 19
+                    </span>{" "}
+                    (20 figuritas); aquí el n.º de catálogo digital sigue siendo
+                    1–20.
                   </p>
                   <div className="grid grid-cols-4 gap-1.5 min-[420px]:grid-cols-5 sm:gap-2">
                     {introFwc.map((s) => renderSticker(s))}
@@ -920,7 +946,7 @@ export function AlbumGrid({
             ))}
 
             <TabsContent value="museum">
-              {emptySearchHint ? null : museum.length === 0 ? (
+              {emptySearchHint ? null : museumAll.length === 0 ? (
                 <div className="text-muted-foreground space-y-2 py-8 text-center text-sm leading-relaxed">
                   <p>
                     Este catálogo aún no incluye el bloque Museo (10 figuritas).
@@ -930,9 +956,19 @@ export function AlbumGrid({
                     <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
                       pnpm seed:catalog
                     </code>{" "}
-                    contra tu base para cargar n.º 981–990 (MUSEUM).
+                    contra tu base para cargar n.º 981–990 (MUSEUM), o aplicá en
+                    Postgres el SQL{" "}
+                    <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                      lib/db/migrations/0018_sticker_catalog_museum.sql
+                    </code>
+                    .
                   </p>
                 </div>
+              ) : museum.length === 0 ? (
+                <p className="text-muted-foreground py-8 text-center text-sm">
+                  Ninguna figurita de Museo coincide con el filtro de estado
+                  activo. Probá con «Todas» u otro filtro.
+                </p>
               ) : (
                 <div className="space-y-3">
                   <p className="text-muted-foreground text-sm leading-relaxed">

@@ -1,3 +1,4 @@
+import { fwcIntroAlbumNumber } from "@/lib/album/slot-label";
 import type { CatalogStickerDTO } from "@/lib/album/types";
 import type { Confederation } from "@/scripts/data/teams-2026";
 import {
@@ -123,7 +124,14 @@ export function stickerMatchesAlbumSearch(
 
   if (/^\d+$/.test(q)) {
     const n = Number(q);
-    return Number.isFinite(n) && sticker.stickerNumber === n;
+    if (!Number.isFinite(n)) return false;
+    if (sticker.teamCode === "FWC") {
+      const panini = fwcIntroAlbumNumber(sticker.stickerNumber);
+      if (panini !== null) {
+        return panini === n;
+      }
+    }
+    return sticker.stickerNumber === n;
   }
 
   const id = normalizeAlbumSearchText(sticker.id);

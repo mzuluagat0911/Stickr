@@ -42,6 +42,44 @@ describe("stickerMatchesAlbumSearch", () => {
     ).toBe(false);
   });
 
+  it("intro FWC: búsqueda por n.º de álbum (0–19), no por n.º de catálogo 1–20", () => {
+    expect(
+      stickerMatchesAlbumSearch(
+        s({ teamCode: "FWC", stickerNumber: 1 }),
+        "0",
+        blobs,
+      ),
+    ).toBe(true);
+    expect(
+      stickerMatchesAlbumSearch(
+        s({ teamCode: "FWC", stickerNumber: 1 }),
+        "00",
+        blobs,
+      ),
+    ).toBe(true);
+    expect(
+      stickerMatchesAlbumSearch(
+        s({ teamCode: "FWC", stickerNumber: 2 }),
+        "1",
+        blobs,
+      ),
+    ).toBe(true);
+    expect(
+      stickerMatchesAlbumSearch(
+        s({ teamCode: "FWC", stickerNumber: 1 }),
+        "1",
+        blobs,
+      ),
+    ).toBe(false);
+    expect(
+      stickerMatchesAlbumSearch(
+        s({ teamCode: "FWC", stickerNumber: 20 }),
+        "19",
+        blobs,
+      ),
+    ).toBe(true);
+  });
+
   it("por código FIFA", () => {
     expect(
       stickerMatchesAlbumSearch(s({ teamCode: "ECU" }), "ecu", blobs),

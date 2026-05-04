@@ -1,0 +1,131 @@
+-- Bloque Museo (10 figuritas, n.º 981–990, team_code MUSEUM) para PR-International.
+-- Idempotente: alinea datos con scripts/seed-catalog.ts si ya existían filas por número.
+INSERT INTO sticker_catalog (
+  id,
+  album_edition,
+  sticker_number,
+  team_code,
+  position_in_team,
+  type,
+  player_name,
+  player_position,
+  image_url
+)
+VALUES
+  (
+    'PR-INT-981',
+    'PR-International',
+    981,
+    'MUSEUM',
+    0,
+    'special_legendary',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-982',
+    'PR-International',
+    982,
+    'MUSEUM',
+    1,
+    'special_gold',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-983',
+    'PR-International',
+    983,
+    'MUSEUM',
+    2,
+    'special_legendary',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-984',
+    'PR-International',
+    984,
+    'MUSEUM',
+    3,
+    'special_gold',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-985',
+    'PR-International',
+    985,
+    'MUSEUM',
+    4,
+    'special_legendary',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-986',
+    'PR-International',
+    986,
+    'MUSEUM',
+    5,
+    'special_gold',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-987',
+    'PR-International',
+    987,
+    'MUSEUM',
+    6,
+    'special_legendary',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-988',
+    'PR-International',
+    988,
+    'MUSEUM',
+    7,
+    'special_gold',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-989',
+    'PR-International',
+    989,
+    'MUSEUM',
+    8,
+    'special_legendary',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    'PR-INT-990',
+    'PR-International',
+    990,
+    'MUSEUM',
+    9,
+    'special_gold',
+    NULL,
+    NULL,
+    NULL
+  )
+ON CONFLICT (album_edition, sticker_number) DO UPDATE SET
+  team_code = EXCLUDED.team_code,
+  position_in_team = EXCLUDED.position_in_team,
+  type = EXCLUDED.type,
+  player_name = EXCLUDED.player_name,
+  player_position = EXCLUDED.player_position,
+  image_url = EXCLUDED.image_url;

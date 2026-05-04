@@ -3,7 +3,7 @@
  *
  * Supuestos (confirmar con el álbum / checklist oficial Panini):
  * - Total **990** figuritas: 20 intro FWC + 48×20 selecciones + 10 bloque Museo (`MUSEUM`).
- *   - Números 1–20: intro (`team_code` FWC).
+ *   - Números 1–20: intro (`team_code` FWC); en el álbum Panini equivalen a FWC 00 + FWC 1–19.
  *   - Números 21–980: 48 selecciones × 20 (`teams-2026.ts`): por equipo ranura 1 = escudo
  *     (`team_crest`), ranura 13 = foto grupal (`team_photo`), ranuras 2–12 y 14–20 = jugadores
  *     (`regular`). `id` = código FIFA (3 letras) + ranura 01–20 (ej. `MEX01`, `ARG13`).
