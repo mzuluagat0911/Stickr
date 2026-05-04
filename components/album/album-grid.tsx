@@ -191,7 +191,7 @@ function TeamCollapsible({
   return (
     <Collapsible
       defaultOpen={false}
-      className="border-border/55 bg-card/35 hover:border-border dark:bg-card/15 rounded-xl border shadow-sm transition-[box-shadow,background-color] duration-200 hover:shadow-md"
+      className="border-border/60 bg-card text-card-foreground hover:border-border rounded-xl border shadow-sm transition-[box-shadow,background-color] duration-200 hover:shadow-md"
     >
       <CollapsibleTrigger className="min-h-12 w-full px-3 py-2.5 text-left sm:min-h-11 sm:px-4">
         <span className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -548,16 +548,28 @@ export function AlbumGrid({
 
   return (
     <>
-      <div className="space-y-6">
+      {/* isolate + bg opaco: legible sobre el gradiente del body y capas decorativas; no afecta al rail lateral (layout z-20). */}
+      <div
+        className="bg-background relative isolate min-w-0 space-y-6"
+        data-page="album"
+      >
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Mi álbum</h1>
-            <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+          <section
+            className="border-border/60 bg-card rounded-xl border px-4 py-4 shadow-sm sm:px-5 sm:py-5"
+            aria-labelledby="album-heading"
+          >
+            <h1
+              id="album-heading"
+              className="text-card-foreground text-2xl font-semibold tracking-tight"
+            >
+              Mi álbum
+            </h1>
+            <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
               <span className="md:hidden">
                 Toca una casilla para avanzar: falta → tengo → repetida. En
                 falta, la estrella arriba a la derecha prioriza para{" "}
                 <Link
-                  className="text-foreground font-medium underline-offset-2 hover:underline"
+                  className="text-primary font-medium underline-offset-2 hover:underline"
                   href="/discover"
                 >
                   Intercambio
@@ -569,7 +581,7 @@ export function AlbumGrid({
                 está repetida, toca la casilla para elegir la cantidad. En
                 falta, la estrella arriba a la derecha prioriza para{" "}
                 <Link
-                  className="text-foreground underline-offset-2 hover:underline"
+                  className="text-primary font-medium underline-offset-2 hover:underline"
                   href="/discover"
                 >
                   Intercambio
@@ -579,7 +591,7 @@ export function AlbumGrid({
                 sticky de abajo.
               </span>
             </p>
-          </div>
+          </section>
           <div className="max-w-lg space-y-3">
             <div className="relative">
               <Input
@@ -643,10 +655,10 @@ export function AlbumGrid({
           </div>
         </div>
 
-        <div className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-0 z-10 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
+        <div className="bg-card/95 supports-backdrop-filter:bg-card/90 text-card-foreground border-border/80 sticky top-0 z-10 space-y-3 rounded-xl border p-4 shadow-sm backdrop-blur-md">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-foreground text-base leading-snug font-medium tracking-tight">
+              <p className="text-base leading-snug font-medium tracking-tight">
                 Te faltan{" "}
                 <span className="tabular-nums">
                   {formatIntegerEs(stats.missing)}
@@ -675,7 +687,7 @@ export function AlbumGrid({
                 </Button>
               </Link>
               <DropdownMenu>
-                <DropdownMenuTrigger className="border-border bg-background/85 hover:bg-muted hover:text-foreground inline-flex h-9 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-[0_1px_2px_0_rgb(20_30_70_/_0.08)] transition-all duration-200 outline-none sm:h-8 sm:w-auto">
+                <DropdownMenuTrigger className="border-border bg-secondary/80 hover:bg-secondary inline-flex h-9 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium shadow-sm transition-all duration-200 outline-none sm:h-8 sm:w-auto">
                   Exportar y lote
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-52">
