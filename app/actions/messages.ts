@@ -332,7 +332,10 @@ export async function openDiscoverExchangeProposalAction(
   if (!convRes.ok) {
     return fail(convRes.message);
   }
-  const conversationId = convRes.data.conversationId;
+  const conversationId = convRes.data?.conversationId;
+  if (!conversationId) {
+    return fail("No pudimos abrir el chat.");
+  }
 
   const { data: meRow } = await supabase
     .from("user_profiles")

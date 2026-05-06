@@ -171,8 +171,14 @@ export function DiscoverTradeOverlapModal({
       setDetail(null);
       const res = await getExchangeOverlapDetailAction(peerUserId);
       if (cancelled) return;
-      if (!res.ok || !res.data) {
-        toast.error(res.message ?? "No se pudo cargar.");
+      if (!res.ok) {
+        toast.error(res.message);
+        closeRef.current(false);
+        setDetail(null);
+        return;
+      }
+      if (!res.data) {
+        toast.error("No se pudo cargar.");
         closeRef.current(false);
         setDetail(null);
         return;
