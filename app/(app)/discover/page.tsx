@@ -41,9 +41,12 @@ export default async function DiscoverPage() {
   const countryName =
     (countryCode && countries.getName(countryCode, "es")) ?? countryCode;
 
+  const shellClass =
+    "relative isolate min-w-0 space-y-8 rounded-[1.75rem] border border-black/10 bg-white/95 px-5 py-7 text-zinc-900 shadow-[0_25px_60px_-12px_rgb(0_0_0_/_0.28)] ring-1 ring-black/10 backdrop-blur-md backdrop-saturate-150 dark:border-white/12 dark:bg-zinc-950/95 dark:text-zinc-50 dark:ring-white/10 md:space-y-10 md:px-8 md:py-9";
+
   if (!city || !countryCode) {
     return (
-      <div className="min-w-0 space-y-8 md:space-y-10">
+      <div className={shellClass}>
         <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl md:tracking-tighter">
           Intercambio
         </h1>
@@ -85,18 +88,22 @@ export default async function DiscoverPage() {
   const locationLabel = `${city}, ${countryCode}`;
 
   return (
-    <div className="min-w-0 space-y-8 md:space-y-10">
+    <div className={shellClass}>
       <header className="space-y-2">
         <h1 className="font-heading text-2xl font-semibold tracking-tight md:text-3xl md:tracking-tighter">
           Intercambio
         </h1>
-        <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed md:text-[0.9375rem] md:leading-snug">
+        <p className="max-w-2xl text-sm leading-relaxed text-zinc-700 md:text-[0.9375rem] md:leading-snug dark:text-zinc-200">
           Coleccionistas en{" "}
-          <span className="text-foreground font-medium">{city}</span>
+          <span className="font-semibold text-zinc-900 dark:text-white">
+            {city}
+          </span>
           {countryName ? (
             <>
               ,{" "}
-              <span className="text-foreground font-medium">{countryName}</span>
+              <span className="font-semibold text-zinc-900 dark:text-white">
+                {countryName}
+              </span>
             </>
           ) : (
             <> ({countryCode})</>
@@ -104,11 +111,11 @@ export default async function DiscoverPage() {
           . Las tarjetas van ordenadas por qué tan bien encajan sus repetidas
           con tus faltas y prioridades del álbum.
         </p>
-        <details className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          <summary className="text-primary hover:text-primary/90 cursor-pointer list-none py-1 text-xs font-medium underline-offset-4 hover:underline [&::-webkit-details-marker]:hidden">
+        <details className="max-w-2xl text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+          <summary className="cursor-pointer list-none py-1 text-xs font-semibold text-[#2b59c3] underline-offset-4 hover:underline dark:text-sky-400 [&::-webkit-details-marker]:hidden">
             Más detalles sobre esta vista
           </summary>
-          <div className="border-border/60 mt-2 space-y-2 border-l-2 pl-3 text-xs leading-relaxed md:text-[0.8125rem]">
+          <div className="mt-2 space-y-2 border-l-2 border-zinc-300 pl-3 text-xs leading-relaxed text-zinc-700 md:text-[0.8125rem] dark:border-zinc-600 dark:text-zinc-300">
             <p>
               Podés coordinar cambios cara a cara o por los medios de contacto
               que cada uno configure en el perfil. Cuando hay cruces claros, el

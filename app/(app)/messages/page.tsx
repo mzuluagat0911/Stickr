@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MessageCircle } from "lucide-react";
@@ -81,6 +82,24 @@ export default async function MessagesPage() {
 
   const list = (rows ?? []) as ConvRow[];
 
+  const proposalConvIds = new Set<string>();
+  const { data: tradeNotifs, error: tradeNotifErr } = await supabase
+    .from("notifications")
+    .select("payload")
+    .eq("user_id", user.id)
+    .eq("type", "trade_proposed")
+    .is("read_at", null);
+
+  if (!tradeNotifErr && Array.isArray(tradeNotifs)) {
+    for (const row of tradeNotifs) {
+      const payload = row.payload as { conversation_id?: unknown } | null;
+      const cid = payload?.conversation_id;
+      if (typeof cid === "string" && cid.length > 0) {
+        proposalConvIds.add(cid);
+      }
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -88,8 +107,8 @@ export default async function MessagesPage() {
           Mensajes
         </h1>
         <p className="text-muted-foreground mt-1 max-w-xl text-sm leading-relaxed">
-          Hilos para coordinar compra/venta u otros acuerdos con otros
-          coleccionistas.
+          Hilos de compra/venta e intercambio. Una propuesta desde Descubrir
+          aparece como solicitud hasta que abras el chat.
         </p>
       </div>
 
@@ -103,10 +122,11 @@ export default async function MessagesPage() {
         <ul className="flex flex-col gap-2">
           {list.map((c) => {
             const peer = c.user_a === user.id ? c.user_b : c.user_a;
-            const label =
-              conversationMarketLabel(
-                normalizeIntentEmbed(c.market_intentions),
-              ) ?? "Conversación";
+            const label = c.market_intention_id
+              ? (conversationMarketLabel(
+                  normalizeIntentEmbed(c.market_intentions),
+                ) ?? "Compra/venta")
+              : "Intercambio";
             const when = c.last_message_at ?? c.created_at;
             const whenLabel = when
               ? new Date(when).toLocaleString("es-CO", {
@@ -117,17 +137,34 @@ export default async function MessagesPage() {
             return (
               <li key={c.id}>
                 <Link href={`/messages/${c.id}`}>
-                  <Card className="border-border/60 hover:bg-muted/30 transition-colors">
+                  <Card className="border-border/65 bg-card/40 hover:bg-muted/35 rounded-2xl shadow-sm ring-1 ring-black/[0.03] backdrop-blur-sm transition-colors dark:ring-white/[0.06]">
                     <CardContent className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="text-foreground truncate font-medium tracking-tight">
-                          {label}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          Con coleccionista ·{" "}
-                          <span className="font-mono text-[11px]">
-                            {peer.slice(0, 8)}…
-                          </span>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-foreground truncate font-medium tracking-tight">
+                            {label}
+                          </p>
+                          {!c.market_intention_id &&
+                          proposalConvIds.has(c.id) ? (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] font-semibold tracking-wide uppercase"
+                            >
+                              Solicitud
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-muted-foreground text-xs leading-snug">
+                          {c.market_intention_id ? (
+                            <>
+                              Con coleccionista ·{" "}
+                              <span className="font-mono text-[11px] tabular-nums">
+                                {peer.slice(0, 8)}…
+                              </span>
+                            </>
+                          ) : (
+                            <>Coordinación directa entre coleccionistas</>
+                          )}
                         </p>
                       </div>
                       {whenLabel ? (

@@ -53,6 +53,8 @@ const FIFA_TO_ISO2: Record<string, string> = {
 
 export function fifaTeamFlagEmoji(teamCode: string): string {
   const up = teamCode.toUpperCase();
+  /** Intro oficial Panini / catálogo (bloque FWC), sin país único. */
+  if (up === "FWC") return "⚽";
   if (up === "MUSEUM") return "🏛️";
   const iso2 = FIFA_TO_ISO2[up];
   if (!iso2) return "🏳️";

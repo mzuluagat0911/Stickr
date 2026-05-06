@@ -5,7 +5,7 @@ import { useTransition } from "react";
 import { Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
-import { openDirectConversationAction } from "@/app/actions/messages";
+import { openDiscoverExchangeProposalAction } from "@/app/actions/messages";
 
 import { Button } from "@/components/ui/button";
 
@@ -21,9 +21,20 @@ export function DiscoverExchangeChatButton({
 
   const openChat = () => {
     startTransition(async () => {
-      const res = await openDirectConversationAction(otherUserId);
+      const res = await openDiscoverExchangeProposalAction(
+        otherUserId,
+        username,
+      );
       if (res.ok && res.data?.conversationId) {
-        toast.success("Chat listo: coordina qué figuras cambiarían.");
+        if (res.data.proposalSent) {
+          toast.success(
+            "Propuesta enviada en el chat con listas sugeridas. Coordiná el detalle ahí o por WhatsApp.",
+          );
+        } else {
+          toast.success(
+            "Ya tenían mensajes en este chat; abrilo para seguir la conversación.",
+          );
+        }
         router.push(`/messages/${res.data.conversationId}`);
       } else if (!res.ok) {
         toast.error(res.message);

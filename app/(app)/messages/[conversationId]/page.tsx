@@ -7,13 +7,16 @@ import {
   type MarketDealRow,
 } from "@/components/features/conversation-deal-closure";
 import { ConversationExchangeGuide } from "@/components/features/conversation-exchange-guide";
+import { ConversationExchangeJourneyBar } from "@/components/features/conversation-exchange-journey-bar";
 import { ConversationMarketOffers } from "@/components/features/conversation-market-offers";
+import { ConversationPeerContactPanel } from "@/components/features/conversation-peer-contact";
 import {
   conversationMarketLabel,
   type MarketIntentEmbed,
 } from "@/lib/messages/conversation-label";
 import { defaultMarketCurrency } from "@/lib/marketplace/currency";
 import type { MarketOfferRow } from "@/lib/marketplace/offer-types";
+import { parseConversationPeerContact } from "@/lib/profile/contact-links";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { conversationIdSchema } from "@/lib/validations/messages";
@@ -84,9 +87,16 @@ export default async function ConversationPage({
 
   const { data: profile } = await supabase
     .from("user_profiles")
-    .select("country_code")
+    .select("country_code, display_name, username")
     .eq("id", user.id)
     .maybeSingle();
+
+  const selfDisplayName =
+    (typeof profile?.display_name === "string"
+      ? profile.display_name.trim()
+      : "") ||
+    (typeof profile?.username === "string" ? profile.username.trim() : "") ||
+    "Yo";
 
   const defaultCurrency = defaultMarketCurrency(profile?.country_code ?? null);
 
@@ -105,6 +115,29 @@ export default async function ConversationPage({
   const row = conv as ConvDetail;
   if (row.user_a !== user.id && row.user_b !== user.id) {
     notFound();
+  }
+
+  if (!row.market_intention_id) {
+    const { error: markReadErr } = await supabase.rpc(
+      "mark_trade_proposal_notifications_read",
+      { p_conversation_id: conversationId },
+    );
+    if (markReadErr) {
+      const missingFn =
+        markReadErr.code === "42883" ||
+        markReadErr.message.includes("mark_trade_proposal_notifications_read");
+      if (missingFn) {
+        console.warn(
+          "[ConversationPage] Falta migración 0022_notifications_trade_proposal.sql:",
+          markReadErr.message,
+        );
+      } else {
+        console.warn(
+          "[ConversationPage] mark_trade_proposal_notifications_read:",
+          markReadErr.message,
+        );
+      }
+    }
   }
 
   const { data: msgs, error: mErr } = await supabase
@@ -131,8 +164,6 @@ export default async function ConversationPage({
     ? (conversationMarketLabel(normalizeIntentEmbed(row.market_intentions)) ??
       "Compra/venta")
     : "Intercambio";
-  const peer = row.user_a === user.id ? row.user_b : row.user_a;
-
   type PeerPublicRow = { username: string | null; city: string | null };
   let peerUsername = "";
   let peerCity: string | null = null;
@@ -149,7 +180,15 @@ export default async function ConversationPage({
         : null;
   }
   const peerLabel =
-    peerUsername !== "" ? `@${peerUsername}` : `Usuario (${peer.slice(0, 8)}…)`;
+    peerUsername !== "" ? `@${peerUsername}` : "Otro coleccionista";
+
+  const { data: peerContactRpc, error: peerContactErr } = await supabase.rpc(
+    "get_conversation_peer_contact",
+    { p_conversation_id: conversationId },
+  );
+  const peerContact = peerContactErr
+    ? null
+    : parseConversationPeerContact(peerContactRpc);
 
   let initialOffers: MarketOfferRow[] = [];
   if (row.market_intention_id) {
@@ -217,6 +256,20 @@ export default async function ConversationPage({
         />
       ) : null}
 
+      <ConversationPeerContactPanel
+        peerLabel={peerLabel}
+        contact={peerContact}
+      />
+
+      {!row.market_intention_id ? (
+        <ConversationExchangeJourneyBar
+          conversationId={conversationId}
+          peerUsername={peerUsername}
+          selfDisplayName={selfDisplayName}
+          peerWhatsappE164={peerContact?.whatsapp ?? null}
+        />
+      ) : null}
+
       {row.market_intention_id ? (
         <ConversationMarketOffers
           conversationId={conversationId}
@@ -237,7 +290,7 @@ export default async function ConversationPage({
         />
       ) : null}
 
-      <div className="bg-muted/25 border-border/50 flex max-h-[min(55vh,28rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4">
+      <div className="bg-card/75 border-border/65 ring-border/30 dark:bg-card/55 flex max-h-[min(55vh,28rem)] flex-col gap-3 overflow-y-auto rounded-2xl border p-4 shadow-inner ring-1 backdrop-blur-md">
         {messages.length === 0 ? (
           row.market_intention_id ? (
             <p className="text-muted-foreground text-center text-sm">

@@ -184,6 +184,24 @@ function pickAlbumSearchTab(filtered: CatalogStickerDTO[]): string | null {
   return null;
 }
 
+function initialAlbumTabForFilter(
+  catalogStickers: CatalogStickerDTO[],
+  blobs: ReadonlyMap<string, string>,
+  filter: AlbumStatusFilter,
+  userMap: UserStickerMapDTO,
+  wantIds: string[],
+): string {
+  const filtered = applyAlbumFilters(
+    catalogStickers,
+    "",
+    blobs,
+    filter,
+    userMap,
+    new Set(wantIds),
+  );
+  return pickAlbumSearchTab(filtered) ?? "intro";
+}
+
 export type AlbumGridProps = {
   userId: string;
   edition: string;
@@ -225,11 +243,11 @@ function TeamCollapsible({
         aria-label={summaryLabel}
       >
         <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1.5 sm:flex-nowrap sm:items-center sm:gap-3">
-          <span className="flex max-w-[42%] min-w-0 shrink-0 items-center gap-2 sm:max-w-[14rem]">
+          <span className="flex max-w-[calc(100%-5.25rem)] min-w-0 flex-1 items-center gap-2 sm:max-w-[14rem]">
             <span className="text-lg leading-none select-none" aria-hidden>
               {fifaTeamFlagEmoji(team.code)}
             </span>
-            <span className="min-w-0 truncate font-semibold tracking-tight text-zinc-950 dark:text-white">
+            <span className="line-clamp-2 min-w-0 leading-snug font-semibold tracking-tight break-words text-zinc-950 sm:line-clamp-1 sm:truncate dark:text-white">
               {team.name}
             </span>
           </span>
@@ -352,16 +370,23 @@ export function AlbumGrid({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const [tab, setTab] = useState("intro");
+  const teamSearchBlobs = useMemo(() => getTeamSearchBlobMap(), []);
+
+  const [tab, setTab] = useState(() =>
+    initialAlbumTabForFilter(
+      catalog,
+      teamSearchBlobs,
+      "missing",
+      initialUserMap,
+      initialExchangeWantIds,
+    ),
+  );
   const [bulkOpen, setBulkOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "missing" | "have" | "duplicate" | "priority"
-  >("all");
+  const [statusFilter, setStatusFilter] =
+    useState<AlbumStatusFilter>("missing");
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
-
-  const teamSearchBlobs = useMemo(() => getTeamSearchBlobMap(), []);
 
   const { data: userMap } = useQuery({
     queryKey: key,
@@ -390,6 +415,23 @@ export function AlbumGrid({
       if (next) setTab(next);
     },
     [catalog, teamSearchBlobs, statusFilter, userMap, wantSet],
+  );
+
+  const setStatusFilterFromChip = useCallback(
+    (value: AlbumStatusFilter) => {
+      setStatusFilter(value);
+      const filtered = applyAlbumFilters(
+        catalog,
+        searchQuery,
+        teamSearchBlobs,
+        value,
+        userMap,
+        wantSet,
+      );
+      const next = pickAlbumSearchTab(filtered);
+      if (next) setTab(next);
+    },
+    [catalog, searchQuery, teamSearchBlobs, userMap, wantSet],
   );
 
   const mutation = useMutation({
@@ -661,29 +703,36 @@ export function AlbumGrid({
               </h1>
               <p className="mt-2 max-w-prose text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                 <span className="md:hidden">
-                  Toca una casilla para avanzar: falta → tengo → repetida. En
-                  falta, la estrella arriba a la derecha prioriza para{" "}
+                  Por defecto ves solo{" "}
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    faltantes
+                  </span>
+                  ; «Todas» muestra el álbum completo. Toca una casilla: falta →
+                  tengo → repetida. En falta, la estrella prioriza para{" "}
                   <Link
                     className="text-primary font-medium underline-offset-2 hover:underline"
                     href="/discover"
                   >
                     Intercambio
                   </Link>
-                  . Exportar va en el panel de abajo.
+                  . Exportar va abajo.
                 </span>
                 <span className="hidden md:inline">
-                  Pulsa para avanzar el estado: falta → la tengo → repetida. Si
-                  está repetida, toca la casilla para elegir la cantidad. En
-                  falta, la estrella arriba a la derecha prioriza para{" "}
+                  Por defecto el filtro es{" "}
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    Faltantes
+                  </span>{" "}
+                  (solo casillas vacías); elegí «Todas» para ver todo el álbum.
+                  Pulsa para cambiar estado: falta → la tengo → repetida; si
+                  está repetida, abre para la cantidad. La estrella en falta
+                  prioriza para{" "}
                   <Link
                     className="text-primary font-medium underline-offset-2 hover:underline"
                     href="/discover"
                   >
                     Intercambio
                   </Link>
-                  ; también puedes filtrar por «Prioridad» o usar el menú
-                  contextual. Exportar faltantes y marcar en lote van en el
-                  panel sticky de abajo.
+                  . Exportar y marcar en lote están en el panel sticky de abajo.
                 </span>
               </p>
             </div>
@@ -735,14 +784,7 @@ export function AlbumGrid({
                       variant={statusFilter === value ? "secondary" : "outline"}
                       className="h-9 shrink-0 rounded-full px-3.5 text-xs sm:h-7"
                       onClick={() =>
-                        setStatusFilter(
-                          value as
-                            | "all"
-                            | "missing"
-                            | "have"
-                            | "duplicate"
-                            | "priority",
-                        )
+                        setStatusFilterFromChip(value as AlbumStatusFilter)
                       }
                     >
                       {label}
@@ -990,15 +1032,20 @@ export function AlbumGrid({
                         .join(" · ")}
                     </p>
                     <div className="space-y-2">
-                      {g.teams.map((team) => (
-                        <TeamCollapsible
-                          key={team.code}
-                          team={team}
-                          stickers={stickerByTeam.get(team.code) ?? []}
-                          teamSlice={stats.byTeam[team.code]}
-                          renderCell={renderSticker}
-                        />
-                      ))}
+                      {g.teams
+                        .filter(
+                          (team) =>
+                            (stickerByTeam.get(team.code) ?? []).length > 0,
+                        )
+                        .map((team) => (
+                          <TeamCollapsible
+                            key={team.code}
+                            team={team}
+                            stickers={stickerByTeam.get(team.code) ?? []}
+                            teamSlice={stats.byTeam[team.code]}
+                            renderCell={renderSticker}
+                          />
+                        ))}
                     </div>
                   </>
                 )}
