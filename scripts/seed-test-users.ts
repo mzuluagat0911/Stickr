@@ -110,7 +110,12 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const client = postgres(DATABASE_URL, { prepare: false });
+  const client = postgres(DATABASE_URL, {
+    prepare: false,
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  });
   const db = drizzle(client, { schema: { userProfiles } });
 
   const { data: listData, error: listError } = await admin.auth.admin.listUsers(

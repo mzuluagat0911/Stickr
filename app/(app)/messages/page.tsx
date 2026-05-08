@@ -65,7 +65,8 @@ export default async function MessagesPage() {
       "id,user_a,user_b,last_message_at,created_at,market_intention_id,market_intentions(sticker_number,kind,currency,status)",
     )
     .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
-    .order("last_message_at", { ascending: false, nullsFirst: false });
+    .order("last_message_at", { ascending: false, nullsFirst: false })
+    .limit(100);
 
   if (error) {
     return (
