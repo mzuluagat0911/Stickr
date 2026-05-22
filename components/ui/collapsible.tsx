@@ -28,10 +28,14 @@ function CollapsibleTrigger({
       asChild={asChild}
       {...props}
     >
-      {children}
-      {!asChild ? (
-        <ChevronDownIcon className="text-muted-foreground size-4 shrink-0 transition-transform group-data-[state=open]/collapsible-trigger:rotate-180" />
-      ) : null}
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {children}
+          <ChevronDownIcon className="text-muted-foreground size-4 shrink-0 transition-transform group-data-[state=open]/collapsible-trigger:rotate-180" />
+        </>
+      )}
     </CollapsiblePrimitive.Trigger>
   );
 }

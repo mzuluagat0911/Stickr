@@ -938,16 +938,14 @@ export function AlbumGrid({
                 <AlbumProgressBar stats={stats} />
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-                <Link href="/discover" className="w-full sm:w-auto">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="h-10 min-h-10 w-full px-4 text-sm sm:h-9 sm:min-h-9 sm:w-auto"
-                  >
-                    Ir a Intercambio
-                  </Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-10 min-h-10 w-full px-4 text-sm sm:h-9 sm:min-h-9 sm:w-auto"
+                  asChild
+                >
+                  <Link href="/discover">Ir a Intercambio</Link>
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border border-zinc-200/90 bg-white px-3 text-[0.8rem] font-medium text-zinc-900 shadow-sm transition-all duration-200 outline-none hover:bg-zinc-100 sm:h-9 sm:min-h-9 sm:w-auto dark:border-zinc-600/80 dark:bg-zinc-800/80 dark:text-zinc-50 dark:hover:bg-zinc-800">
                     Exportar y lote
