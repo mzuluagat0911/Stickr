@@ -19,7 +19,7 @@ export const VISIBILITY_LABELS: Record<
   "post_trade" | "always" | "never",
   string
 > = {
-  post_trade: "Solo después de acordar un intercambio",
-  always: "Visible en mi perfil",
+  post_trade: "Visible en Intercambio (y tras acordar en chat)",
+  always: "Visible en Intercambio y perfil",
   never: "No mostrar",
 };

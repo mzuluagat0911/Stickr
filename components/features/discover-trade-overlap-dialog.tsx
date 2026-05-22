@@ -221,8 +221,8 @@ export function DiscoverTradeOverlapModal({
             Intercambio con @{peerUsername}
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Listas según el álbum declarado y la privacidad (misma ciudad).
-            Coordiná en el chat qué pedís y qué ofrecés.
+            Listas según el álbum declarado y la privacidad del perfil. Coordiná
+            en el chat qué pedís y qué ofrecés.
           </DialogDescription>
         </DialogHeader>
 

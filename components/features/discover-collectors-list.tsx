@@ -1,5 +1,8 @@
 "use client";
 
+import countries from "i18n-iso-countries";
+import es from "i18n-iso-countries/langs/es.json";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -8,6 +11,7 @@ import { formatDecimalEs, formatIntegerEs } from "@/lib/format-numbers";
 import { normalizeAlbumSearchText } from "@/lib/teams/album-search";
 
 import { DiscoverExchangeChatButton } from "@/components/features/discover-exchange-chat-button";
+import { DiscoverWhatsAppContact } from "@/components/features/discover-whatsapp-contact";
 import {
   DiscoverTradeOverlapModal,
   type DiscoverOverlapScrollTarget,
@@ -23,7 +27,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-type MatchFilter = "all" | "help" | "wish";
+
+countries.registerLocale(es as import("i18n-iso-countries").LocaleData);
+
+type MatchFilter = "all" | "help" | "wish" | "same_city";
+
+function cityLabel(c: SameCityCollector): string {
+  const city = c.city.trim();
+  if (!city) return "Sin ciudad";
+  const country =
+    c.countryCode && countries.getName(c.countryCode, "es")
+      ? countries.getName(c.countryCode, "es")
+      : c.countryCode;
+  return country ? `${city}, ${country}` : city;
+}
 
 export type DiscoverCollectorsListProps = {
   collectors: SameCityCollector[];
@@ -58,9 +75,21 @@ function DiscoverCollectorCard({ c }: { c: SameCityCollector }) {
       >
         <CardHeader className="min-w-0 space-y-2 pb-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <CardTitle className="font-heading min-w-0 flex-1 truncate text-lg font-semibold tracking-tight">
+            <CardTitle className="font-heading min-w-0 truncate text-lg font-semibold tracking-tight">
               @{c.username}
             </CardTitle>
+            <span
+              className={cn(
+                "inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[0.625rem] font-medium tracking-wide",
+                c.isSameCity
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-zinc-200/90 bg-zinc-100 text-zinc-700 dark:border-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-200",
+              )}
+              title={cityLabel(c)}
+            >
+              <MapPin className="size-3 shrink-0" aria-hidden />
+              <span className="truncate">{cityLabel(c)}</span>
+            </span>
             {priorityMatch ? (
               <span className="bg-primary/14 text-primary shrink-0 rounded-full px-2 py-0.5 text-[0.625rem] font-semibold tracking-wide uppercase">
                 Coincidencia ⭐
@@ -99,9 +128,8 @@ function DiscoverCollectorCard({ c }: { c: SameCityCollector }) {
           ) : (
             <p className="text-muted-foreground text-xs leading-relaxed break-words">
               Sin cruces automáticos con tus faltas o prioridades (misma edición
-              de álbum y mismos códigos de catálogo). Igual podés abrir el
-              detalle para ver sus repetidas y faltantes si coincide ciudad y
-              edición.
+              de álbum). Igual podés abrir el detalle para ver sus repetidas y
+              faltantes.
             </p>
           )}
         </CardHeader>
@@ -208,7 +236,17 @@ function DiscoverCollectorCard({ c }: { c: SameCityCollector }) {
               username={uname}
             />
           ) : null}
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-stretch sm:justify-end">
+            <DiscoverWhatsAppContact
+              otherUserId={c.otherUserId}
+              username={uname}
+              peerDisplayName={c.peerDisplayName}
+              showChatWhenLocked={!hasExchangeOverlap}
+              contact={{
+                whatsappE164: c.whatsappE164,
+                whatsappLocked: c.whatsappLocked,
+              }}
+            />
             <Button
               type="button"
               variant="secondary"
@@ -253,9 +291,11 @@ export function DiscoverCollectorsList({
       if (matchFilter === "help" && c.matchDistinctHelp <= 0) return false;
       if (matchFilter === "wish" && c.wishlistOverlapDistinct <= 0)
         return false;
+      if (matchFilter === "same_city" && !c.isSameCity) return false;
       if (!qNorm) return true;
       const u = normalizeAlbumSearchText(c.username ?? "");
-      return u.includes(qNorm);
+      const city = normalizeAlbumSearchText(c.city ?? "");
+      return u.includes(qNorm) || city.includes(qNorm);
     });
   }, [collectors, qNorm, matchFilter]);
 
@@ -273,7 +313,7 @@ export function DiscoverCollectorsList({
             id="discover-collector-search"
             type="search"
             autoComplete="off"
-            placeholder="@usuario o parte del nombre…"
+            placeholder="@usuario, ciudad o parte del nombre…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="max-w-md rounded-xl border-zinc-200 bg-white text-zinc-900 shadow-sm placeholder:text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900/90 dark:text-zinc-50 dark:placeholder:text-zinc-400"
@@ -288,6 +328,7 @@ export function DiscoverCollectorsList({
           {(
             [
               ["all", "Todos"],
+              ["same_city", "Mi ciudad"],
               ["help", "Con repetidas que te sirven"],
               ["wish", "Con prioridad ⭐"],
             ] as const

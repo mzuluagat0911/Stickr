@@ -34,6 +34,12 @@ describe("URLs de contacto", () => {
     expect(whatsAppHref("+57 300 123 4567")).toBe("https://wa.me/573001234567");
   });
 
+  it("whatsappHref codifica texto prellenado", () => {
+    expect(whatsAppHref("+573001234567", "Hola Stickr")).toBe(
+      "https://wa.me/573001234567?text=Hola%20Stickr",
+    );
+  });
+
   it("telegramHref codifica y quita @", () => {
     expect(telegramHref("@usuario_test")).toBe("https://t.me/usuario_test");
   });

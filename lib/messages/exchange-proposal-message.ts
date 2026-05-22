@@ -74,6 +74,43 @@ export function buildDiscoverExchangeProposalMessage(input: {
   return clampChars(body);
 }
 
+/** Mensaje prellenado al abrir WhatsApp desde Intercambio. */
+export function buildDiscoverWhatsAppPrefillMessage(input: {
+  peerName: string;
+  overlap: ExchangeOverlapDetail | null;
+  overlapRpcFailed?: boolean;
+}): string {
+  const name = input.peerName.trim() || "coleccionista";
+
+  if (input.overlapRpcFailed || !input.overlap || input.overlap.ok !== true) {
+    return clampChars(
+      `Hola ${name}, vengo de Stickr.\n\n` +
+        `Quiero coordinar un intercambio de figuritas. Cuando puedas, contame qué repetidas tenés y qué te faltan; yo te paso lo mismo. ¡Gracias!`,
+    );
+  }
+
+  const d = input.overlap;
+  const theyHaveForMe = bulletLines(
+    d.theirDuplicatesYouNeed,
+    MAX_ITEMS_SECTION,
+  );
+  const iHaveForThem = bulletLines(d.yourDuplicatesTheyNeed, MAX_ITEMS_SECTION);
+
+  const theyBlock =
+    d.theirDuplicatesYouNeed.length > 0
+      ? `Lo que vos tenés repetido y a mí me sirve (${d.counts.theirDuplicatesYouNeed} tipos):\n${theyHaveForMe}`
+      : `Lo que me serviría de tus repetidas: por ahora Stickr no detecta cruces con tu álbum ${d.albumEdition}.`;
+
+  const iBlock =
+    d.yourDuplicatesTheyNeed.length > 0
+      ? `Lo que yo tengo repetido y a vos te puede servir (${d.counts.yourDuplicatesTheyNeed} tipos):\n${iHaveForThem}`
+      : `Lo que te podría servir de mis repetidas: por ahora no hay cruces automáticos en la app.`;
+
+  return clampChars(
+    `Hola ${name}, vengo de Stickr.\n\n${theyBlock}\n\n${iBlock}\n\n¿Te parece si lo coordinamos? ¡Gracias!`,
+  );
+}
+
 /** Texto sugerido para pegar en WhatsApp tras la propuesta en Stickr. */
 export function buildExchangeWhatsAppCoordinatorBody(input: {
   peerFirstNameOrUsername: string;

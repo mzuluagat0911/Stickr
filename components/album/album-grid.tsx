@@ -795,7 +795,7 @@ export function AlbumGrid({
             </div>
           </div>
 
-          <div className="sticky top-0 z-10 space-y-3 rounded-xl border border-zinc-200/90 bg-zinc-50/95 p-4 text-zinc-900 shadow-sm backdrop-blur-sm dark:border-zinc-600/80 dark:bg-zinc-900/85 dark:text-zinc-50">
+          <div className="relative z-0 mb-4 space-y-3 rounded-xl border border-zinc-200/90 bg-zinc-50/95 p-4 text-zinc-900 shadow-sm md:sticky md:top-2 md:z-10 md:mb-0 md:backdrop-blur-sm dark:border-zinc-600/80 dark:bg-zinc-900/85 dark:text-zinc-50">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1 space-y-2">
                 <p className="text-base leading-snug font-medium tracking-tight">
@@ -812,7 +812,73 @@ export function AlbumGrid({
                   </span>{" "}
                   del álbum (al menos una lámina por casilla).
                 </p>
-                <div className="space-y-1.5 text-sm leading-snug">
+
+                <p className="text-sm leading-snug md:hidden">
+                  <span className="font-semibold tabular-nums">
+                    {slotsPct}%
+                  </span>
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    {" "}
+                    ·{" "}
+                    <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                      {formatIntegerEs(stats.slotsWithAtLeastOne)}
+                    </span>
+                    /{formatIntegerEs(stats.total)} casillas
+                  </span>
+                </p>
+
+                <Collapsible className="md:hidden">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs text-zinc-600 dark:text-zinc-400"
+                    >
+                      Ver detalle del progreso
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-1.5 pt-1 text-sm leading-snug">
+                    <p className="text-zinc-600 dark:text-zinc-400">
+                      Cada casilla cuenta como mucho{" "}
+                      <span className="font-medium">1</span> para el %, aunque
+                      marques ×3 o ×4.
+                    </p>
+                    <p className="text-zinc-600 dark:text-zinc-400">
+                      Intro (FWC){" "}
+                      <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                        {formatIntegerEs(bk.introFwc.slotsWithCopy)}
+                      </span>
+                      /{formatIntegerEs(bk.introFwc.catalogTotal)} · Equipos{" "}
+                      <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                        {formatIntegerEs(bk.nationalTeams.slotsWithCopy)}
+                      </span>
+                      /{formatIntegerEs(bk.nationalTeams.catalogTotal)} · Museo{" "}
+                      <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                        {formatIntegerEs(bk.museum.slotsWithCopy)}
+                      </span>
+                      /{formatIntegerEs(bk.museum.catalogTotal)}
+                    </p>
+                    <p className="text-zinc-600 dark:text-zinc-400">
+                      Repetidas:{" "}
+                      <span className="text-zinc-800 tabular-nums dark:text-zinc-200">
+                        {formatIntegerEs(stats.duplicatePhysicalRepeats)}
+                      </span>{" "}
+                      láminas (
+                      <span className="tabular-nums">
+                        {formatIntegerEs(stats.duplicateExtraCopies)}
+                      </span>{" "}
+                      de más).
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                      «Tengo» {formatIntegerEs(stats.have)} · «Repetida»{" "}
+                      {formatIntegerEs(stats.duplicateStickers)} · Vacías{" "}
+                      {formatIntegerEs(stats.missing)}
+                    </p>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <div className="hidden space-y-1.5 text-sm leading-snug md:block">
                   <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="font-semibold tabular-nums">
                       {slotsPct}%

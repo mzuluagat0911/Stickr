@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,12 @@ const bulkUpdateSchema = z.array(
     count: z.number().int().min(0).max(999).optional(),
   }),
 );
+
+function revalidateAlbumViews() {
+  revalidatePath("/album");
+  revalidatePath("/profile");
+  revalidatePath("/discover");
+}
 
 async function requireUserId(): Promise<
   { ok: true; userId: string } | { ok: false; message: string }
@@ -93,6 +100,7 @@ export async function markStickerHaveAction(
     .delete()
     .eq("user_id", u.userId)
     .eq("sticker_id", parsed.data);
+  revalidateAlbumViews();
   return ok();
 }
 
@@ -132,6 +140,7 @@ export async function markStickerDuplicateAction(
     .delete()
     .eq("user_id", u.userId)
     .eq("sticker_id", parsedId.data);
+  revalidateAlbumViews();
   return ok();
 }
 
@@ -157,6 +166,7 @@ export async function unmarkStickerAction(
   if (error) {
     return fail(error.message);
   }
+  revalidateAlbumViews();
   return ok();
 }
 
@@ -227,5 +237,6 @@ export async function bulkMarkStickersAction(
       .eq("sticker_id", item.stickerId);
   }
 
+  revalidateAlbumViews();
   return ok();
 }

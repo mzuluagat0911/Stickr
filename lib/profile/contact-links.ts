@@ -33,10 +33,16 @@ export function whatsAppDigits(e164OrNational: string): string {
   return e164OrNational.replace(/\D/g, "");
 }
 
-export function whatsAppHref(e164OrNational: string): string | null {
+export function whatsAppHref(
+  e164OrNational: string,
+  prefillText?: string,
+): string | null {
   const digits = whatsAppDigits(e164OrNational);
   if (!digits) return null;
-  return `https://wa.me/${digits}`;
+  const base = `https://wa.me/${digits}`;
+  const text = prefillText?.trim();
+  if (!text) return base;
+  return `${base}?text=${encodeURIComponent(text)}`;
 }
 
 export function telegramHref(usernameWithoutAt: string): string | null {

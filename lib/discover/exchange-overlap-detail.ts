@@ -94,5 +94,9 @@ export function formatOverlapStickerLine(s: ExchangeOverlapStickerRow): string {
   const name = (s.playerName ?? "").trim();
   const bits = [`#${s.stickerNumber}`, s.teamCode];
   if (name) bits.push(name);
+  if (s.tradableQty != null && s.tradableQty > 1) {
+    bits.push(`×${s.tradableQty} disp.`);
+  }
+  if (s.priorityStar) bits.push("⭐");
   return bits.join(" · ");
 }

@@ -4,9 +4,11 @@ import { UserRoundXIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { loadUserAlbumProgress } from "@/lib/album/load-user-album-progress";
 import { createClient } from "@/lib/supabase/server";
 import { hasPublicSupabaseConfig } from "@/lib/supabase/public-env";
 import { countryFlagEmoji } from "@/lib/data/countries";
+import { formatIntegerEs } from "@/lib/format-numbers";
 import { mapboxStaticPreviewUrl } from "@/lib/mapbox-static";
 import type { ContactMethods } from "@/lib/types/profile";
 
@@ -23,6 +25,8 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 
 countries.registerLocale(es as import("i18n-iso-countries").LocaleData);
+
+export const dynamic = "force-dynamic";
 
 function channelConfigured(
   block: { number?: string; username?: string; address?: string } | undefined,
@@ -102,6 +106,21 @@ export default async function ProfilePage() {
   const rating = Number.parseFloat(String(profile.rating_avg ?? "0"));
   const trades = Number(profile.trades_completed ?? 0);
 
+  let albumProgress: Awaited<ReturnType<typeof loadUserAlbumProgress>> = null;
+  try {
+    albumProgress = await loadUserAlbumProgress(
+      supabase,
+      user.id,
+      (profile.album_edition as string) ?? "PR-International",
+    );
+  } catch {
+    albumProgress = null;
+  }
+
+  const slotsPct = albumProgress
+    ? Math.round(albumProgress.percentCollected * 100)
+    : 0;
+
   const waOk = channelConfigured(cm?.whatsapp);
   const tgOk = channelConfigured(cm?.telegram);
   const emOk = channelConfigured(cm?.email_public);
@@ -159,8 +178,18 @@ export default async function ProfilePage() {
             <CardDescription>Álbum completo</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">0%</p>
-            <p className="text-muted-foreground text-xs">Hasta Fase 2.2</p>
+            <p className="text-2xl font-semibold tabular-nums">{slotsPct}%</p>
+            <p className="text-muted-foreground text-xs">
+              {albumProgress ? (
+                <>
+                  {formatIntegerEs(albumProgress.slotsWithAtLeastOne)}/
+                  {formatIntegerEs(albumProgress.total)} casillas con al menos
+                  una lámina
+                </>
+              ) : (
+                "Sin catálogo cargado para tu edición"
+              )}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -168,8 +197,12 @@ export default async function ProfilePage() {
             <CardDescription>Faltantes</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">990</p>
-            <p className="text-muted-foreground text-xs">Placeholder</p>
+            <p className="text-2xl font-semibold tabular-nums">
+              {formatIntegerEs(albumProgress?.missing ?? 0)}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              Casillas sin «tengo» ni «repetida»
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -177,8 +210,14 @@ export default async function ProfilePage() {
             <CardDescription>Repetidas</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold">0</p>
-            <p className="text-muted-foreground text-xs">Placeholder</p>
+            <p className="text-2xl font-semibold tabular-nums">
+              {formatIntegerEs(albumProgress?.duplicateStickers ?? 0)}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {albumProgress && albumProgress.duplicateExtraCopies > 0
+                ? `${formatIntegerEs(albumProgress.duplicateExtraCopies)} copias de más`
+                : "Casillas marcadas como repetida"}
+            </p>
           </CardContent>
         </Card>
         <Card>

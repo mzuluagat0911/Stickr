@@ -13,7 +13,7 @@ const REASON_MESSAGES: Record<string, string> = {
   invalid_peer: "Usuario no válido.",
   peer_not_found: "No encontramos ese perfil.",
   not_visible:
-    "No podés ver el detalle: revisá ciudad/país o que el álbum no sea privado.",
+    "No podés ver el detalle: el perfil no está visible o el álbum es privado.",
   edition_mismatch:
     "Usan distinta edición de álbum; los códigos no coinciden para listar cruces.",
 };
