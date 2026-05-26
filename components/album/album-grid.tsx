@@ -29,10 +29,14 @@ import {
   type TeamProgressSlice,
 } from "@/lib/album/progress";
 import {
-  formatMissingCsv,
-  formatMissingDetailLines,
-  formatMissingNumbersOnly,
+  formatStickerNumbersWhatsApp,
+  formatStickersCsv,
+  formatStickersTxt,
+  formatStickersWhatsApp,
+  listDuplicateStickers,
+  listHaveStickers,
   listMissingStickers,
+  type StickerExportCategory,
 } from "@/lib/album/export-missing";
 import {
   albumStickersQueryKey,
@@ -462,50 +466,80 @@ export function AlbumGrid({
     () => listMissingStickers(catalog, userMap ?? {}),
     [catalog, userMap],
   );
+  const haveForExport = useMemo(
+    () => listHaveStickers(catalog, userMap ?? {}),
+    [catalog, userMap],
+  );
+  const duplicateForExport = useMemo(
+    () => listDuplicateStickers(catalog, userMap ?? {}),
+    [catalog, userMap],
+  );
 
   const refreshAlbumQueries = async () => {
     await qc.invalidateQueries({ queryKey: key });
     await qc.invalidateQueries({ queryKey: ewKey });
   };
 
-  const copyMissingDetail = () => {
-    if (missingForExport.length === 0) {
-      toast.message("No tienes faltantes en este álbum.");
+  const copyStickerWhatsApp = (
+    rows: CatalogStickerDTO[],
+    category: StickerExportCategory,
+    emptyMessage: string,
+    successMessage: string,
+  ) => {
+    if (rows.length === 0) {
+      toast.message(emptyMessage);
       return;
     }
-    const text = formatMissingDetailLines(missingForExport);
+    const text = formatStickersWhatsApp(rows, category, {
+      edition,
+      userMap: userMap ?? {},
+    });
     void navigator.clipboard.writeText(text).then(
-      () => toast.success("Faltantes copiados al portapapeles"),
+      () => toast.success(successMessage),
       () => toast.error("No se pudo copiar. Revisa permisos del navegador."),
     );
   };
 
-  const copyMissingNumbers = () => {
-    if (missingForExport.length === 0) {
-      toast.message("No tienes faltantes en este álbum.");
+  const copyStickerNumbersWhatsApp = (
+    rows: CatalogStickerDTO[],
+    emptyMessage: string,
+    successMessage: string,
+  ) => {
+    if (rows.length === 0) {
+      toast.message(emptyMessage);
       return;
     }
-    const text = formatMissingNumbersOnly(missingForExport);
+    const text = formatStickerNumbersWhatsApp(rows);
     void navigator.clipboard.writeText(text).then(
-      () => toast.success("Números copiados"),
+      () => toast.success(successMessage),
       () => toast.error("No se pudo copiar."),
     );
   };
 
-  const downloadMissingCsv = () => {
-    if (missingForExport.length === 0) {
-      toast.message("No tienes faltantes para exportar.");
+  const downloadStickerFile = (
+    rows: CatalogStickerDTO[],
+    category: StickerExportCategory,
+    format: "txt" | "csv",
+    emptyMessage: string,
+  ) => {
+    if (rows.length === 0) {
+      toast.message(emptyMessage);
       return;
     }
-    const csv = formatMissingCsv(missingForExport);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const isTxt = format === "txt";
+    const body = isTxt
+      ? formatStickersTxt(rows, category, { edition, userMap: userMap ?? {} })
+      : formatStickersCsv(rows);
+    const blob = new Blob([body], {
+      type: isTxt ? "text/plain;charset=utf-8" : "text/csv;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `stickr-faltantes-${edition}.csv`;
+    a.download = `stickr-${category}-${edition}.${format}`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Archivo descargado");
+    toast.success(isTxt ? "TXT listo para WhatsApp" : "CSV descargado");
   };
 
   const filteredCatalog = useMemo(
@@ -715,7 +749,7 @@ export function AlbumGrid({
                   >
                     Intercambio
                   </Link>
-                  . Exportar va abajo.
+                  . Exportar (WhatsApp con banderas) va abajo.
                 </span>
                 <span className="hidden md:inline">
                   Por defecto el filtro es{" "}
@@ -732,7 +766,8 @@ export function AlbumGrid({
                   >
                     Intercambio
                   </Link>
-                  . Exportar y marcar en lote están en el panel sticky de abajo.
+                  . Exportar para WhatsApp y marcar en lote están en el panel
+                  sticky de abajo.
                 </span>
               </p>
             </div>
@@ -950,15 +985,149 @@ export function AlbumGrid({
                   <DropdownMenuTrigger className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border border-zinc-200/90 bg-white px-3 text-[0.8rem] font-medium text-zinc-900 shadow-sm transition-all duration-200 outline-none hover:bg-zinc-100 sm:h-9 sm:min-h-9 sm:w-auto dark:border-zinc-600/80 dark:bg-zinc-800/80 dark:text-zinc-50 dark:hover:bg-zinc-800">
                     Exportar y lote
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-52">
-                    <DropdownMenuItem onSelect={() => copyMissingDetail()}>
-                      Copiar faltantes (detalle)
+                  <DropdownMenuContent align="end" className="min-w-56">
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerWhatsApp(
+                          missingForExport,
+                          "faltantes",
+                          "No tienes faltantes en este álbum.",
+                          "Faltantes copiados — pega en WhatsApp",
+                        )
+                      }
+                    >
+                      Copiar faltantes para WhatsApp
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => copyMissingNumbers()}>
-                      Copiar solo números
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          missingForExport,
+                          "faltantes",
+                          "txt",
+                          "No tienes faltantes para exportar.",
+                        )
+                      }
+                    >
+                      Descargar .txt de faltantes
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => downloadMissingCsv()}>
-                      Descargar CSV
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerNumbersWhatsApp(
+                          missingForExport,
+                          "No tienes faltantes en este álbum.",
+                          "Números con bandera copiados",
+                        )
+                      }
+                    >
+                      Copiar números de faltantes (compacto)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          missingForExport,
+                          "faltantes",
+                          "csv",
+                          "No tienes faltantes para exportar.",
+                        )
+                      }
+                    >
+                      Descargar CSV de faltantes
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerWhatsApp(
+                          haveForExport,
+                          "tengo",
+                          "No tienes figuritas marcadas como tengo.",
+                          "Tengo copiado — pega en WhatsApp",
+                        )
+                      }
+                    >
+                      Copiar tengo para WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          haveForExport,
+                          "tengo",
+                          "txt",
+                          "No tienes figuritas de tengo para exportar.",
+                        )
+                      }
+                    >
+                      Descargar .txt de tengo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerNumbersWhatsApp(
+                          haveForExport,
+                          "No tienes figuritas marcadas como tengo.",
+                          "Números con bandera copiados",
+                        )
+                      }
+                    >
+                      Copiar números de tengo (compacto)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          haveForExport,
+                          "tengo",
+                          "csv",
+                          "No tienes figuritas de tengo para exportar.",
+                        )
+                      }
+                    >
+                      Descargar CSV de tengo
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerWhatsApp(
+                          duplicateForExport,
+                          "repetidas",
+                          "No tienes repetidas en este álbum.",
+                          "Repetidas copiadas — pega en WhatsApp",
+                        )
+                      }
+                    >
+                      Copiar repetidas para WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          duplicateForExport,
+                          "repetidas",
+                          "txt",
+                          "No tienes repetidas para exportar.",
+                        )
+                      }
+                    >
+                      Descargar .txt de repetidas
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerNumbersWhatsApp(
+                          duplicateForExport,
+                          "No tienes repetidas en este álbum.",
+                          "Números con bandera copiados",
+                        )
+                      }
+                    >
+                      Copiar números de repetidas (compacto)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          duplicateForExport,
+                          "repetidas",
+                          "csv",
+                          "No tienes repetidas para exportar.",
+                        )
+                      }
+                    >
+                      Descargar CSV de repetidas
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setBulkOpen(true)}>
