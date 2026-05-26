@@ -75,6 +75,19 @@ describe("overlapStickerCatalogDto", () => {
     expect(d!.teamCode).toBe("FWC");
     expect(d!.positionInTeam).toBe(0);
   });
+
+  it("fallback para id legacy PR-INT en bloque selecciones", () => {
+    const d = overlapStickerCatalogDto({
+      stickerId: "PR-INT-23",
+      stickerNumber: 23,
+      teamCode: "ALG",
+      playerName: null,
+    });
+    expect(d).not.toBeNull();
+    expect(d!.teamCode).toBe("ALG");
+    expect(d!.positionInTeam).toBe(2);
+    expect(d!.type).toBe("regular");
+  });
 });
 
 describe("formatOverlapStickerLine", () => {
@@ -118,6 +131,6 @@ describe("formatOverlapStickerLine", () => {
         teamCode: "XYZ",
         playerName: null,
       }),
-    ).toBe("#142 · XYZ");
+    ).toBe("XYZ 2 · Jugador");
   });
 });

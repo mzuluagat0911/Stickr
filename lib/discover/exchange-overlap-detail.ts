@@ -7,6 +7,7 @@ import {
   FWC_INTRO_CATALOG_MIN,
 } from "@/lib/album/slot-label";
 import type { CatalogStickerDTO } from "@/lib/album/types";
+import { TEAMS_2026 } from "@/scripts/data/teams-2026";
 
 /** Fila devuelta por `exchange_overlap_detail` (subconjuntos comunes). */
 export type ExchangeOverlapStickerRow = {
@@ -99,6 +100,9 @@ export function parseExchangeOverlapDetail(
 }
 
 const MUSEUM_CATALOG_START = 981;
+const TEAM_CATALOG_START = 21;
+const TEAM_CATALOG_END = 980;
+const STICKERS_PER_TEAM = 20;
 
 const RE_PR_INT = /^PR-INT-(\d+)$/i;
 /** Código FIFA (3 letras) + ranura 01–20, p. ej. `MEX01`, `ARG13`. */
@@ -198,6 +202,24 @@ export function overlapStickerCatalogDto(
       stickerNumber: sn,
       positionInTeam: pos,
       type: pos % 2 === 0 ? "special_legendary" : "special_gold",
+    });
+  }
+
+  /**
+   * Fallback para catálogos legacy donde `sticker_id` quedó como `PR-INT-{n}`
+   * también en selecciones. Derivamos ranura 1..20 desde sticker_number.
+   */
+  if (sn >= TEAM_CATALOG_START && sn <= TEAM_CATALOG_END) {
+    const zeroBased = sn - TEAM_CATALOG_START;
+    const teamIdx = Math.floor(zeroBased / STICKERS_PER_TEAM);
+    const slot1Based = (zeroBased % STICKERS_PER_TEAM) + 1;
+    const teamFromOrder = TEAMS_2026[teamIdx]?.code;
+    const teamCode = tc.length === 3 ? tc : (teamFromOrder ?? tc);
+    return dto({
+      teamCode,
+      stickerNumber: sn,
+      positionInTeam: slot1Based - 1,
+      type: inferNationalSlotType(slot1Based),
     });
   }
 
