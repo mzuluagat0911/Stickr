@@ -12,6 +12,7 @@ import {
   onboardingSchema,
   signupSchema,
 } from "@/lib/validations/auth";
+import { DEFAULT_PRIVACY_SETTINGS } from "@/lib/constants/privacy";
 import type { ContactMethods } from "@/lib/types/profile";
 
 function toUsernameBase(input: string): string {
@@ -201,6 +202,7 @@ export async function completeOnboardingAction(
       geo_opt_in: d.geoOptIn,
       trade_preferences: tradePrefs,
       contact_methods: contactPatch,
+      privacy_settings: DEFAULT_PRIVACY_SETTINGS,
       onboarding_completed: true,
       last_active_at: new Date().toISOString(),
     };

@@ -10,6 +10,7 @@ import {
   privacySettingsSchema,
   type PrivacyFormInput,
 } from "@/lib/validations/profile";
+import { DEFAULT_PRIVACY_SETTINGS } from "@/lib/constants/privacy";
 import type { PrivacySettings } from "@/lib/types/profile";
 
 import { Button } from "@/components/ui/button";
@@ -41,10 +42,7 @@ type Props = {
   initial: PrivacySettings | null;
 };
 
-const DEFAULT: PrivacySettings = {
-  album_visibility: "registered",
-  proposals_from: "anyone",
-};
+const DEFAULT: PrivacySettings = DEFAULT_PRIVACY_SETTINGS;
 
 export function PrivacySettingsForm({ initial }: Props) {
   const [pending, start] = useTransition();

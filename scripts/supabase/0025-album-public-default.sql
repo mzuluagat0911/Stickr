@@ -1,0 +1,3 @@
+-- Ejecutar en Supabase SQL Editor (copiar contenido completo):
+-- lib/db/migrations/0025_album_public_default_overlap_gate.sql
+-- O en local: pnpm db:push

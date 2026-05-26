@@ -7,9 +7,14 @@ import { toast } from "sonner";
 import { getExchangeOverlapDetailAction } from "@/app/actions/exchange-overlap";
 import {
   formatOverlapStickerLine,
+  overlapStickerCatalogDto,
   type ExchangeOverlapDetailOk,
   type ExchangeOverlapStickerRow,
 } from "@/lib/discover/exchange-overlap-detail";
+import {
+  catalogSlotLabel,
+  catalogStickerDisplayLabel,
+} from "@/lib/album/slot-label";
 import { fifaTeamFlagEmoji } from "@/lib/teams/fifa-country";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +57,10 @@ function StickerList({
     <ul className="border-border/70 bg-muted/30 max-h-52 overflow-y-auto rounded-xl border shadow-inner sm:max-h-56">
       {rows.map((s) => {
         const flag = fifaTeamFlagEmoji(s.teamCode);
+        const cat = overlapStickerCatalogDto(s);
+        const albumLine = cat
+          ? `${catalogStickerDisplayLabel(cat)} · ${catalogSlotLabel(cat)}`
+          : null;
         const name = (s.playerName ?? "").trim();
         return (
           <li
@@ -66,13 +75,21 @@ function StickerList({
                 {flag}
               </span>
               <span className="min-w-0 pt-0.5 leading-snug">
-                <span className="text-foreground font-semibold tabular-nums">
-                  #{s.stickerNumber}
-                </span>
-                <span className="text-muted-foreground px-1.5">·</span>
-                <span className="bg-background/80 text-muted-foreground ring-border/60 dark:bg-background/40 rounded-md px-1 py-px font-mono text-[11px] font-semibold tracking-wide ring-1">
-                  {s.teamCode}
-                </span>
+                {albumLine ? (
+                  <span className="text-foreground font-semibold tabular-nums">
+                    {albumLine}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-foreground font-semibold tabular-nums">
+                      #{s.stickerNumber}
+                    </span>
+                    <span className="text-muted-foreground px-1.5">·</span>
+                    <span className="bg-background/80 text-muted-foreground ring-border/60 dark:bg-background/40 rounded-md px-1 py-px font-mono text-[11px] font-semibold tracking-wide ring-1">
+                      {s.teamCode}
+                    </span>
+                  </>
+                )}
                 {name ? (
                   <>
                     <span className="text-muted-foreground px-1">·</span>

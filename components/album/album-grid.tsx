@@ -72,6 +72,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -475,6 +476,31 @@ export function AlbumGrid({
     [catalog, userMap],
   );
 
+  const exportForStatusFilter = useMemo(() => {
+    if (statusFilter === "missing") {
+      return {
+        rows: missingForExport,
+        category: "faltantes" as const,
+        label: "faltantes",
+      };
+    }
+    if (statusFilter === "have") {
+      return {
+        rows: haveForExport,
+        category: "tengo" as const,
+        label: "tengo",
+      };
+    }
+    if (statusFilter === "duplicate") {
+      return {
+        rows: duplicateForExport,
+        category: "repetidas" as const,
+        label: "repetidas",
+      };
+    }
+    return null;
+  }, [statusFilter, missingForExport, haveForExport, duplicateForExport]);
+
   const refreshAlbumQueries = async () => {
     await qc.invalidateQueries({ queryKey: key });
     await qc.invalidateQueries({ queryKey: ewKey });
@@ -827,6 +853,74 @@ export function AlbumGrid({
                   ))}
                 </div>
               </div>
+              {exportForStatusFilter &&
+              exportForStatusFilter.rows.length > 0 ? (
+                <div
+                  className="flex flex-col gap-2 rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 dark:border-amber-800/60 dark:bg-amber-950/40"
+                  role="region"
+                  aria-label={`Exportar ${exportForStatusFilter.label}`}
+                >
+                  <p className="text-xs font-medium text-amber-950 dark:text-amber-100">
+                    Exportar{" "}
+                    <span className="capitalize">
+                      {exportForStatusFilter.label}
+                    </span>{" "}
+                    (
+                    <span className="tabular-nums">
+                      {formatIntegerEs(exportForStatusFilter.rows.length)}
+                    </span>
+                    )
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-9"
+                      onClick={() =>
+                        copyStickerWhatsApp(
+                          exportForStatusFilter.rows,
+                          exportForStatusFilter.category,
+                          `No tienes ${exportForStatusFilter.label} en este álbum.`,
+                          `${exportForStatusFilter.label} copiadas — pega en WhatsApp`,
+                        )
+                      }
+                    >
+                      Copiar para WhatsApp
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9"
+                      onClick={() =>
+                        downloadStickerFile(
+                          exportForStatusFilter.rows,
+                          exportForStatusFilter.category,
+                          "txt",
+                          `No tienes ${exportForStatusFilter.label} para exportar.`,
+                        )
+                      }
+                    >
+                      Descargar .txt
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-9"
+                      onClick={() =>
+                        copyStickerNumbersWhatsApp(
+                          exportForStatusFilter.rows,
+                          `No tienes ${exportForStatusFilter.label} en este álbum.`,
+                          "Números con bandera copiados",
+                        )
+                      }
+                    >
+                      Solo números
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -985,7 +1079,64 @@ export function AlbumGrid({
                   <DropdownMenuTrigger className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border border-zinc-200/90 bg-white px-3 text-[0.8rem] font-medium text-zinc-900 shadow-sm transition-all duration-200 outline-none hover:bg-zinc-100 sm:h-9 sm:min-h-9 sm:w-auto dark:border-zinc-600/80 dark:bg-zinc-800/80 dark:text-zinc-50 dark:hover:bg-zinc-800">
                     Exportar y lote
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-56">
+                  <DropdownMenuContent
+                    align="end"
+                    className="max-h-[min(70vh,22rem)] min-w-56 overflow-y-auto"
+                  >
+                    <DropdownMenuLabel className="text-amber-800 dark:text-amber-200">
+                      Repetidas ({formatIntegerEs(duplicateForExport.length)})
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerWhatsApp(
+                          duplicateForExport,
+                          "repetidas",
+                          "No tienes repetidas en este álbum.",
+                          "Repetidas copiadas — pega en WhatsApp",
+                        )
+                      }
+                    >
+                      Copiar repetidas para WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          duplicateForExport,
+                          "repetidas",
+                          "txt",
+                          "No tienes repetidas para exportar.",
+                        )
+                      }
+                    >
+                      Descargar .txt de repetidas
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        copyStickerNumbersWhatsApp(
+                          duplicateForExport,
+                          "No tienes repetidas en este álbum.",
+                          "Números de repetidas copiados",
+                        )
+                      }
+                    >
+                      Copiar números de repetidas (compacto)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadStickerFile(
+                          duplicateForExport,
+                          "repetidas",
+                          "csv",
+                          "No tienes repetidas para exportar.",
+                        )
+                      }
+                    >
+                      Descargar CSV de repetidas
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>
+                      Faltantes ({formatIntegerEs(missingForExport.length)})
+                    </DropdownMenuLabel>
                     <DropdownMenuItem
                       onSelect={() =>
                         copyStickerWhatsApp(
@@ -1034,6 +1185,9 @@ export function AlbumGrid({
                       Descargar CSV de faltantes
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuLabel>
+                      Tengo ({formatIntegerEs(haveForExport.length)})
+                    </DropdownMenuLabel>
                     <DropdownMenuItem
                       onSelect={() =>
                         copyStickerWhatsApp(
@@ -1080,54 +1234,6 @@ export function AlbumGrid({
                       }
                     >
                       Descargar CSV de tengo
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        copyStickerWhatsApp(
-                          duplicateForExport,
-                          "repetidas",
-                          "No tienes repetidas en este álbum.",
-                          "Repetidas copiadas — pega en WhatsApp",
-                        )
-                      }
-                    >
-                      Copiar repetidas para WhatsApp
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        downloadStickerFile(
-                          duplicateForExport,
-                          "repetidas",
-                          "txt",
-                          "No tienes repetidas para exportar.",
-                        )
-                      }
-                    >
-                      Descargar .txt de repetidas
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        copyStickerNumbersWhatsApp(
-                          duplicateForExport,
-                          "No tienes repetidas en este álbum.",
-                          "Números con bandera copiados",
-                        )
-                      }
-                    >
-                      Copiar números de repetidas (compacto)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        downloadStickerFile(
-                          duplicateForExport,
-                          "repetidas",
-                          "csv",
-                          "No tienes repetidas para exportar.",
-                        )
-                      }
-                    >
-                      Descargar CSV de repetidas
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setBulkOpen(true)}>
