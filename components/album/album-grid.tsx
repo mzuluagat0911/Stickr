@@ -45,6 +45,8 @@ import {
 import {
   FWC_INTRO_CATALOG_MAX,
   FWC_INTRO_CATALOG_MIN,
+  catalogSlotLabel,
+  catalogStickerDisplayLabel,
 } from "@/lib/album/slot-label";
 import type { CatalogStickerDTO, UserStickerMapDTO } from "@/lib/album/types";
 import { formatIntegerEs } from "@/lib/format-numbers";
@@ -58,6 +60,14 @@ import { AlbumBulkDialog } from "@/components/album/album-bulk-dialog";
 import { AlbumProgressBar } from "@/components/album/album-progress-bar";
 import { StickerCell } from "@/components/album/sticker-cell";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -81,6 +91,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Textarea } from "@/components/ui/textarea";
 import type { Team2026 } from "@/scripts/data/teams-2026";
 import {
   WORLD_CUP_2026_ALBUM_GROUPS,
@@ -103,6 +114,139 @@ type Mut =
   | { op: "have"; stickerId: string }
   | { op: "duplicate"; stickerId: string; count: number }
   | { op: "unmark"; stickerId: string };
+
+function normalizeToken(t: string): string {
+  return t.trim().replace(/\s+/g, " ");
+}
+
+function uniqueStrings(items: string[]): string[] {
+  return Array.from(new Set(items));
+}
+
+function parseIntSafe(s: string): number | null {
+  const n = Number.parseInt(s, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function fwcAlbumToCatalogNumber(albumNumber: number): number | null {
+  if (albumNumber < 0 || albumNumber > 19) return null;
+  return albumNumber === 0 ? 1 : albumNumber + 1;
+}
+
+function resolvePastedStickerIds(args: {
+  raw: string;
+  catalog: CatalogStickerDTO[];
+}): { stickerIds: string[]; matchedCount: number; unmatched: string[] } {
+  const byId = new Map(args.catalog.map((s) => [s.id.toUpperCase(), s]));
+  const byCatalogNumber = new Map(
+    args.catalog.map((s) => [s.stickerNumber, s]),
+  );
+  const byTeamSlot = new Map<string, CatalogStickerDTO>();
+  for (const s of args.catalog) {
+    const up = s.teamCode.trim().toUpperCase();
+    if (up === "FWC" || up === "MUSEUM") continue;
+    const slot1 = s.positionInTeam + 1;
+    byTeamSlot.set(`${up} ${slot1}`, s);
+    byTeamSlot.set(`${up}${String(slot1).padStart(2, "0")}`, s);
+  }
+
+  const unmatched: string[] = [];
+  const out: string[] = [];
+
+  const lines = args.raw
+    .split(/\r?\n/g)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const consume = (token: string): CatalogStickerDTO | null => {
+    const t = normalizeToken(token);
+    if (!t) return null;
+
+    // id exacto (ARG05, PR-INT-23, etc.)
+    const idHit = byId.get(t.toUpperCase());
+    if (idHit) return idHit;
+
+    // FWC 00 / FWC 7
+    const mFwc = t.match(/^FWC\s*0?(\d{1,2})$/i);
+    if (mFwc) {
+      const album = parseIntSafe(mFwc[1] ?? "");
+      if (album === null) return null;
+      const cat = fwcAlbumToCatalogNumber(album);
+      if (cat === null) return null;
+      return byCatalogNumber.get(cat) ?? null;
+    }
+
+    // MUSEUM 1..10
+    const mMuseum = t.match(/^MUSEUM\s*(\d{1,2})$/i);
+    if (mMuseum) {
+      const idx = parseIntSafe(mMuseum[1] ?? "");
+      if (idx === null || idx < 1) return null;
+      const museumCatalog = 981 + (idx - 1);
+      return byCatalogNumber.get(museumCatalog) ?? null;
+    }
+
+    // TEAM 1..20 (ARG 5, ALG 03)
+    const mTeamSlot = t.match(/^([A-Z]{3})\s*0?(\d{1,2})$/i);
+    if (mTeamSlot) {
+      const team = (mTeamSlot[1] ?? "").toUpperCase();
+      const slot = parseIntSafe(mTeamSlot[2] ?? "");
+      if (!team || slot === null) return null;
+      return byTeamSlot.get(`${team} ${slot}`) ?? null;
+    }
+
+    // número de catálogo global: 23, #23
+    const mNum = t.match(/^#?\s*(\d{1,4})$/);
+    if (mNum) {
+      const n = parseIntSafe(mNum[1] ?? "");
+      if (n === null) return null;
+      return byCatalogNumber.get(n) ?? null;
+    }
+
+    return null;
+  };
+
+  // Extrae tokens típicos dentro de cada línea (ej. "🇦🇷 ARG 5 · Jugador")
+  const extractTokens = (line: string): string[] => {
+    const t = line.toUpperCase();
+    const toks: string[] = [];
+
+    // IDs
+    for (const m of t.matchAll(/PR-INT-\d{1,4}/g)) toks.push(m[0]);
+    for (const m of t.matchAll(/[A-Z]{3}\d{2}/g)) toks.push(m[0]);
+
+    // FWC / MUSEUM / TEAM SLOT
+    for (const m of t.matchAll(/\bFWC\s*0?\d{1,2}\b/g)) toks.push(m[0]);
+    for (const m of t.matchAll(/\bMUSEUM\s*\d{1,2}\b/g)) toks.push(m[0]);
+    for (const m of t.matchAll(/\b[A-Z]{3}\s*0?\d{1,2}\b/g)) toks.push(m[0]);
+
+    // números sueltos (#23, 23)
+    for (const m of t.matchAll(/#\s*\d{1,4}/g)) toks.push(m[0]);
+    return uniqueStrings(toks.map((x) => normalizeToken(x)));
+  };
+
+  for (const line of lines) {
+    const candidates = extractTokens(line);
+    if (candidates.length === 0) {
+      // fallback: intentar consumir la línea completa
+      const hit = consume(line);
+      if (hit) out.push(hit.id);
+      else unmatched.push(line);
+      continue;
+    }
+    let matchedAny = false;
+    for (const c of candidates) {
+      const hit = consume(c);
+      if (hit) {
+        out.push(hit.id);
+        matchedAny = true;
+      }
+    }
+    if (!matchedAny) unmatched.push(line);
+  }
+
+  const ids = uniqueStrings(out);
+  return { stickerIds: ids, matchedCount: ids.length, unmatched };
+}
 
 function applyMut(
   map: UserStickerMapDTO | undefined,
@@ -387,6 +531,8 @@ export function AlbumGrid({
     ),
   );
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyRaw, setVerifyRaw] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<AlbumStatusFilter>("missing");
@@ -403,6 +549,44 @@ export function AlbumGrid({
     initialData: initialUserMap,
     staleTime: 60_000,
   });
+
+  const verifyResolved = useMemo(
+    () => resolvePastedStickerIds({ raw: verifyRaw, catalog }),
+    [verifyRaw, catalog],
+  );
+
+  const verifyMatchedCatalog = useMemo(() => {
+    const byId = new Map(catalog.map((s) => [s.id, s]));
+    return verifyResolved.stickerIds
+      .map((id) => byId.get(id))
+      .filter(Boolean) as CatalogStickerDTO[];
+  }, [verifyResolved.stickerIds, catalog]);
+
+  const verifyUseful = useMemo(
+    () => verifyMatchedCatalog.filter((s) => !userMap?.[s.id]),
+    [verifyMatchedCatalog, userMap],
+  );
+
+  const verifyAlreadyHave = useMemo(
+    () => verifyMatchedCatalog.filter((s) => Boolean(userMap?.[s.id])),
+    [verifyMatchedCatalog, userMap],
+  );
+
+  const copyVerifyUseful = () => {
+    if (verifyUseful.length === 0) {
+      toast.message("No hay figuritas de esa lista que te falten.");
+      return;
+    }
+    const text = verifyUseful
+      .slice()
+      .sort((a, b) => a.stickerNumber - b.stickerNumber)
+      .map((s) => `${catalogStickerDisplayLabel(s)} · ${catalogSlotLabel(s)}`)
+      .join("\n");
+    void navigator.clipboard.writeText(text).then(
+      () => toast.success("Copiado"),
+      () => toast.error("No se pudo copiar."),
+    );
+  };
 
   const onSearchQueryChange = useCallback(
     (value: string) => {
@@ -1075,6 +1259,15 @@ export function AlbumGrid({
                 >
                   <Link href="/discover">Ir a Intercambio</Link>
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 min-h-10 w-full px-4 text-sm sm:h-9 sm:min-h-9 sm:w-auto"
+                  onClick={() => setVerifyOpen(true)}
+                >
+                  Verificar lista
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="inline-flex h-10 min-h-10 w-full items-center justify-center rounded-[min(var(--radius-md),12px)] border border-zinc-200/90 bg-white px-3 text-[0.8rem] font-medium text-zinc-900 shadow-sm transition-all duration-200 outline-none hover:bg-zinc-100 sm:h-9 sm:min-h-9 sm:w-auto dark:border-zinc-600/80 dark:bg-zinc-800/80 dark:text-zinc-50 dark:hover:bg-zinc-800">
                     Exportar y lote
@@ -1244,6 +1437,124 @@ export function AlbumGrid({
               </div>
             </div>
           </div>
+
+          <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Verificar lista</DialogTitle>
+                <DialogDescription>
+                  Pegá una lista que te pasaron. Stickr detecta formatos como{" "}
+                  <span className="font-mono">ARG 5</span>,{" "}
+                  <span className="font-mono">FWC 00</span>,{" "}
+                  <span className="font-mono">#23 ALG</span> o{" "}
+                  <span className="font-mono">PR-INT-23</span>, y te dice cuáles
+                  te sirven según tu álbum.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-2">
+                <Textarea
+                  rows={8}
+                  value={verifyRaw}
+                  onChange={(e) => setVerifyRaw(e.target.value)}
+                  placeholder="Pegá acá la lista…"
+                  className="font-mono text-sm"
+                  autoComplete="off"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Coinciden en catálogo:{" "}
+                  <span className="text-foreground font-medium">
+                    {formatIntegerEs(verifyResolved.matchedCount)}
+                  </span>
+                  {verifyResolved.unmatched.length > 0 ? (
+                    <>
+                      {" "}
+                      · Sin coincidencia:{" "}
+                      {verifyResolved.unmatched.slice(0, 10).join(", ")}
+                      {verifyResolved.unmatched.length > 10 ? "…" : ""}
+                    </>
+                  ) : null}
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border p-3">
+                  <p className="text-sm font-semibold">
+                    Me sirven{" "}
+                    <span className="text-muted-foreground font-normal tabular-nums">
+                      ({formatIntegerEs(verifyUseful.length)})
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    Te faltan en tu álbum.
+                  </p>
+                  <div className="mt-2 max-h-56 overflow-y-auto text-xs">
+                    {verifyUseful.length === 0 ? (
+                      <p className="text-muted-foreground italic">
+                        Nada por ahora.
+                      </p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {verifyUseful
+                          .slice()
+                          .sort((a, b) => a.stickerNumber - b.stickerNumber)
+                          .map((s) => (
+                            <li key={s.id} className="tabular-nums">
+                              {catalogStickerDisplayLabel(s)}{" "}
+                              <span className="text-muted-foreground">·</span>{" "}
+                              {catalogSlotLabel(s)}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border p-3">
+                  <p className="text-sm font-semibold">
+                    Ya las tengo{" "}
+                    <span className="text-muted-foreground font-normal tabular-nums">
+                      ({formatIntegerEs(verifyAlreadyHave.length)})
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    Ya las marcaste (tengo o repetida).
+                  </p>
+                  <div className="mt-2 max-h-56 overflow-y-auto text-xs">
+                    {verifyAlreadyHave.length === 0 ? (
+                      <p className="text-muted-foreground italic">Ninguna.</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {verifyAlreadyHave
+                          .slice()
+                          .sort((a, b) => a.stickerNumber - b.stickerNumber)
+                          .map((s) => (
+                            <li key={s.id} className="tabular-nums">
+                              {catalogStickerDisplayLabel(s)}{" "}
+                              <span className="text-muted-foreground">·</span>{" "}
+                              {catalogSlotLabel(s)}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setVerifyRaw("")}
+                >
+                  Limpiar
+                </Button>
+                <Button type="button" onClick={() => copyVerifyUseful()}>
+                  Copiar “me sirven”
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {emptySearchHint ? (
             <div className="rounded-xl border border-dashed border-zinc-300/80 px-4 py-2 dark:border-zinc-600/80">
