@@ -158,6 +158,30 @@ function resolvePastedStickerIds(args: {
     .map((l) => l.trim())
     .filter(Boolean);
 
+  const expandNumberList = (s: string): number[] => {
+    const out: number[] = [];
+    const parts = s
+      .split(/[,\s]+/g)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    for (const p of parts) {
+      const mRange = p.match(/^(\d{1,4})\s*-\s*(\d{1,4})$/);
+      if (mRange) {
+        const a = parseIntSafe(mRange[1] ?? "");
+        const b = parseIntSafe(mRange[2] ?? "");
+        if (a === null || b === null) continue;
+        const lo = Math.min(a, b);
+        const hi = Math.max(a, b);
+        if (hi - lo > 2000) continue;
+        for (let n = lo; n <= hi; n += 1) out.push(n);
+        continue;
+      }
+      const n = parseIntSafe(p.replace(/^#/, ""));
+      if (n !== null) out.push(n);
+    }
+    return uniqueStrings(out.map(String)).map((x) => Number(x));
+  };
+
   const consume = (token: string): CatalogStickerDTO | null => {
     const t = normalizeToken(token);
     if (!t) return null;
@@ -205,6 +229,39 @@ function resolvePastedStickerIds(args: {
     return null;
   };
 
+  const resolveTeamLine = (line: string): CatalogStickerDTO[] | null => {
+    // Ej.: "MEX 🇲🇽: 20" / "RSA: 4, 5, 7" / "FWC : 11, 12" / "SCO 🏴: 2-9"
+    const m = line.match(/^\s*([A-Z]{3}|FWC|MUSEUM)\b[^:]*:\s*(.+)$/i);
+    if (!m) return null;
+    const team = (m[1] ?? "").trim().toUpperCase();
+    const rest = m[2] ?? "";
+    const nums = expandNumberList(rest);
+    if (nums.length === 0) return [];
+
+    const hits: CatalogStickerDTO[] = [];
+    for (const n of nums) {
+      if (team === "FWC") {
+        const cat = fwcAlbumToCatalogNumber(n);
+        if (cat === null) continue;
+        const s = byCatalogNumber.get(cat);
+        if (s) hits.push(s);
+        continue;
+      }
+      if (team === "MUSEUM") {
+        const cat = 981 + (n - 1);
+        const s = byCatalogNumber.get(cat);
+        if (s) hits.push(s);
+        continue;
+      }
+      const s =
+        byTeamSlot.get(`${team} ${n}`) ??
+        byTeamSlot.get(`${team}${String(n).padStart(2, "0")}`) ??
+        null;
+      if (s) hits.push(s);
+    }
+    return hits;
+  };
+
   // Extrae tokens típicos dentro de cada línea (ej. "🇦🇷 ARG 5 · Jugador")
   const extractTokens = (line: string): string[] => {
     const t = line.toUpperCase();
@@ -225,6 +282,13 @@ function resolvePastedStickerIds(args: {
   };
 
   for (const line of lines) {
+    const fromTeamLine = resolveTeamLine(line);
+    if (fromTeamLine) {
+      if (fromTeamLine.length === 0) unmatched.push(line);
+      else out.push(...fromTeamLine.map((s) => s.id));
+      continue;
+    }
+
     const candidates = extractTokens(line);
     if (candidates.length === 0) {
       // fallback: intentar consumir la línea completa
